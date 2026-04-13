@@ -134,7 +134,7 @@ export default function Home() {
   const viewKey = `${currentView.type}-${'productId' in currentView ? currentView.productId : ''}${'productSlug' in currentView ? currentView.productSlug : ''}${'orderId' in currentView ? currentView.orderId : ''}${'search' in currentView ? currentView.search : ''}${'categoryId' in currentView ? currentView.categoryId : ''}${'categorySlug' in currentView ? currentView.categorySlug : ''}${'minPrice' in currentView ? currentView.minPrice : ''}${'maxPrice' in currentView ? currentView.maxPrice : ''}`
 
   const isFullPageView =
-    currentView.type === "cart" || currentView.type === "checkout" || currentView.type === "admin"
+    currentView.type === "cart" || currentView.type === "checkout" || currentView.type === "admin" || currentView.type === "order-confirmation"
 
   return (
     <>
@@ -168,6 +168,16 @@ export default function Home() {
             {currentView.type === "cart" && <CartPage />}
             {currentView.type === "checkout" && <CheckoutPage />}
             {currentView.type === "admin" && <AdminPanel />}
+            {currentView.type === "order-confirmation" && (
+              <OrderConfirmation
+                orderNumber={
+                  "orderNumber" in currentView ? currentView.orderNumber : ""
+                }
+                orderId={
+                  "orderId" in currentView ? currentView.orderId : ""
+                }
+              />
+            )}
           </PageTransition>
         ) : (
           <PageTransition key={`main-${viewKey}`} viewKey={viewKey}>
@@ -205,16 +215,6 @@ export default function Home() {
               {currentView.type === "orders" && <OrderList />}
               {currentView.type === "order-detail" && (
                 <OrderDetail orderId={currentView.orderId} />
-              )}
-              {currentView.type === "order-confirmation" && (
-                <OrderConfirmation
-                  orderNumber={
-                    "orderNumber" in currentView ? currentView.orderNumber : ""
-                  }
-                  orderId={
-                    "orderId" in currentView ? currentView.orderId : ""
-                  }
-                />
               )}
               {currentView.type === "wishlist" && <WishlistPage />}
               {currentView.type === "compare" && <ComparePage />}
