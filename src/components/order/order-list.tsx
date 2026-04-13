@@ -124,12 +124,19 @@ export function OrderList() {
 
   const { toast } = useToast()
 
-  // Redirect to login if not authenticated
+  // Wait for Zustand persist to hydrate before checking auth
+  const [authHydrated, setAuthHydrated] = useState(false)
   useEffect(() => {
-    if (!isAuthenticated) {
+    const timer = setTimeout(() => setAuthHydrated(true), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Redirect to login if not authenticated (only after hydration)
+  useEffect(() => {
+    if (authHydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [isAuthenticated, setView])
+  }, [authHydrated, isAuthenticated, setView])
 
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
