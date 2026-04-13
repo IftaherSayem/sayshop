@@ -46,8 +46,7 @@ import {
   RefreshCw,
   PackageX,
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { toast as sonnerToast } from "sonner"
+import { toast } from "sonner"
 import { useRewardsStore } from "@/stores/rewards-store"
 import {
   Collapsible,
@@ -73,21 +72,16 @@ export function CartPage() {
   const getShipping = useCartStore((s) => s.getShipping)
   const setView = useUIStore((s) => s.setView)
   const { isAuthenticated } = useAuthStore()
-  const { toast } = useToast()
 
   // Wait for Zustand persist to hydrate before checking auth
-  const [authHydrated, setAuthHydrated] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setAuthHydrated(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
+  const hydrated = useAuthStore((s) => s._hydrated)
 
   // Redirect to login if not authenticated (only after hydration)
   useEffect(() => {
-    if (authHydrated && !isAuthenticated) {
+    if (hydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [authHydrated, isAuthenticated, setView])
+  }, [hydrated, isAuthenticated, setView])
 
   // Save for later
   const savedForLater = useCartStore((s) => s.savedForLater)
@@ -188,10 +182,7 @@ export function CartPage() {
   const handleDeleteSelected = () => {
     selectedItems.forEach((id) => removeItem(id))
     setSelectedItems(new Set())
-    toast({
-      title: "Items removed",
-      description: `${selectedCount} item${selectedCount > 1 ? 's' : ''} removed from cart.`,
-    })
+    toast.success(`${selectedCount} item${selectedCount > 1 ? 's' : ''} removed from cart.`)
   }
 
   const handleApplyCoupon = async () => {
@@ -214,10 +205,7 @@ export function CartPage() {
           setCouponData(null)
         } else {
           setCouponData(data)
-          toast({
-            title: "Coupon applied!",
-            description: data.message,
-          })
+          toast.success("Coupon applied!", { description: data.message })
         }
       } else {
         setCouponError(data.error || "Invalid coupon code")
