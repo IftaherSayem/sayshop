@@ -578,59 +578,63 @@ export async function POST(request: NextRequest) {
 
     // ── Decrement inventory stock ──
     for (const item of verifiedItems) {
-      await supabase
-        .rpc('decrement_stock', {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        })
-        .catch(async () => {
-          // Fallback: manual decrement if RPC doesn't exist
-          try {
-            const { data: inv } = await supabase
+      try {
+        const { error: rpcError } = await supabase
+          .rpc('decrement_stock', {
+            p_product_id: item.product_id,
+            p_quantity: item.quantity,
+          })
+        if (rpcError) throw rpcError
+      } catch {
+        // Fallback: manual decrement if RPC doesn't exist or fails
+        try {
+          const { data: inv } = await supabase
+            .from('inventory')
+            .select('stock')
+            .eq('product_id', item.product_id)
+            .single()
+          if (inv && (inv.stock as number) >= item.quantity) {
+            await supabase
               .from('inventory')
-              .select('stock')
+              .update({
+                stock: (inv.stock as number) - item.quantity,
+              })
               .eq('product_id', item.product_id)
-              .single()
-            if (inv && (inv.stock as number) >= item.quantity) {
-              await supabase
-                .from('inventory')
-                .update({
-                  stock: (inv.stock as number) - item.quantity,
-                })
-                .eq('product_id', item.product_id)
-            }
-          } catch {
-            // Non-critical, just log
           }
-        })
+        } catch {
+          // Non-critical, just log
+        }
+      }
     }
 
     // ── Increment coupon used_count if applied ──
     if (sanitizedCouponCode && couponResult.discount > 0) {
-      await supabase
-        .rpc('increment_coupon_used', {
-          p_code: sanitizedCouponCode.toUpperCase(),
-        })
-        .catch(async () => {
-          // Fallback: manual increment
-          try {
-            const { data: current } = await supabase
+      try {
+        const { error: rpcError } = await supabase
+          .rpc('increment_coupon_used', {
+            p_code: sanitizedCouponCode.toUpperCase(),
+          })
+        if (rpcError) throw rpcError
+      } catch {
+        // Fallback: manual increment
+        try {
+          const { data: current } = await supabase
+            .from('coupons')
+            .select('used_count')
+            .eq('code', sanitizedCouponCode.toUpperCase())
+            .maybeSingle()
+          if (current) {
+            await supabase
               .from('coupons')
-              .select('used_count')
+              .update({
+                used_count: (current.used_count as number) + 1,
+              })
               .eq('code', sanitizedCouponCode.toUpperCase())
-              .maybeSingle()
-            if (current) {
-              await supabase
-                .from('coupons')
-                .update({
-                  used_count: (current.used_count as number) + 1,
-                })
-                .eq('code', sanitizedCouponCode.toUpperCase())
-            }
-          } catch {
-            // Silently fail — coupon tracking is non-critical
           }
-        })
+        } catch {
+          // Silently fail — coupon tracking is non-critical
+        }
+      }
     }
 
     // ── Create payment record ──
