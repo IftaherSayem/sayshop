@@ -102,12 +102,19 @@ export function CheckoutPage() {
   const { isAuthenticated } = useAuthStore()
   const { toast } = useToast()
 
-  // Redirect to login if not authenticated
+  // Wait for Zustand persist to hydrate before checking auth
+  const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    if (!isAuthenticated) {
+    const timer = setTimeout(() => setHydrated(true), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Redirect to login if not authenticated (only after hydration)
+  useEffect(() => {
+    if (hydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [isAuthenticated, setView])
+  }, [hydrated, isAuthenticated, setView])
 
   const [step, setStep] = useState<CheckoutStep>(1)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bkash")
@@ -432,7 +439,15 @@ export function CheckoutPage() {
     setView({ type: "orders" })
   }
 
-  // ── Empty Cart ─────────────────────────────────────────────────
+  // ── Hydrating / Empty Cart ────────────────────────────────────
+  if (!hydrated) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      </main>
+    )
+  }
+
   if (items.length === 0 && !orderResult) {
     return (
       <main className="min-h-screen bg-background">
