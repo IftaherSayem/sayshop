@@ -59,6 +59,7 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [displayedCode, setDisplayedCode] = useState<string | null>(null)
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -108,6 +109,18 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
     otpRefs.current[focusIndex]?.focus()
   }, [verifyCode])
 
+  // Auto-fill OTP inputs when verification code is received
+  useEffect(() => {
+    if (displayedCode && displayedCode.length === 6) {
+      const digits = displayedCode.split("")
+      const newCode = ["", "", "", "", "", ""]
+      for (let i = 0; i < 6; i++) {
+        newCode[i] = digits[i] || ""
+      }
+      setVerifyCode(newCode)
+    }
+  }, [displayedCode])
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signinEmail.trim() || !signinPassword) {
@@ -137,7 +150,7 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
             })
             const vData = await vRes.json()
             if (vData.code) {
-              toast.info(`Your verification code: ${vData.code}`, { duration: 15000 })
+              setDisplayedCode(vData.code)
             }
           } catch {
             // Silent fail — user can use resend button
@@ -188,14 +201,13 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
         toast.error(data.error || "Sign up failed")
         return
       }
-      // Show verification screen with the code visible (no real email sent yet)
+      // Show verification screen with the code visible
       setVerifyEmail(data.user.email)
       setVerificationStep("verify")
-      toast.success("Account created!")
-      // Show the verification code since no real email is sent
       if (data.verificationCode) {
-        toast.info(`Your verification code: ${data.verificationCode}`, { duration: 15000 })
+        setDisplayedCode(data.verificationCode)
       }
+      toast.success("Account created!")
     } catch {
       toast.error("Network error. Please try again.")
     } finally {
@@ -247,7 +259,8 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
         return
       }
       if (data.code) {
-        toast.info(`Your verification code: ${data.code}`, { duration: 15000 })
+        setDisplayedCode(data.code)
+        toast.info(`Verification code: ${data.code}`, { duration: 15000 })
       }
       setResendCooldown(60)
       setVerifyCode(["", "", "", "", "", ""])
@@ -263,6 +276,7 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
     setVerificationStep(null)
     setVerifyEmail("")
     setVerifyCode(["", "", "", "", "", ""])
+    setDisplayedCode(null)
   }
 
   const handleForgotPassword = () => {
@@ -322,6 +336,25 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
                     We sent a 6-digit code to{" "}
                     <span className="font-semibold text-foreground">{verifyEmail}</span>
                   </CardDescription>
+
+                  {/* Verification Code Display */}
+                  {displayedCode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-center dark:border-orange-800/50 dark:bg-orange-950/30"
+                    >
+                      <p className="mb-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+                        Your Verification Code
+                      </p>
+                      <p className="font-mono text-2xl font-bold tracking-[0.3em] text-orange-700 dark:text-orange-300">
+                        {displayedCode}
+                      </p>
+                      <p className="mt-1 text-[11px] text-orange-500/70">
+                        (In production, this would be sent to your email)
+                      </p>
+                    </motion.div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* OTP Input Boxes */}
