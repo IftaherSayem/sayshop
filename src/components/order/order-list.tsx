@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { useRealtimeRefetch } from "@/hooks/use-supabase-realtime"
 
 // ── Status Config ──────────────────────────────────────────────────
@@ -122,21 +122,15 @@ export function OrderList() {
   const setView = useUIStore((s) => s.setView)
   const { isAuthenticated } = useAuthStore()
 
-  const { toast } = useToast()
-
   // Wait for Zustand persist to hydrate before checking auth
-  const [authHydrated, setAuthHydrated] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setAuthHydrated(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
+  const hydrated = useAuthStore((s) => s._hydrated)
 
   // Redirect to login if not authenticated (only after hydration)
   useEffect(() => {
-    if (authHydrated && !isAuthenticated) {
+    if (hydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [authHydrated, isAuthenticated, setView])
+  }, [hydrated, isAuthenticated, setView])
 
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -260,10 +254,7 @@ export function OrderList() {
         })
       }
 
-      toast({
-        title: "Items added to cart",
-        description: `${items.length} item${items.length > 1 ? 's' : ''} from order ${order.orderNumber} added to your cart.`,
-      })
+      toast.success(`${items.length} item${items.length > 1 ? 's' : ''} from order ${order.orderNumber} added to your cart.`)
     } finally {
       setReorderingId(null)
     }
