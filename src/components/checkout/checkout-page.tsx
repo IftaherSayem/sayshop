@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { motion, AnimatePresence } from "framer-motion"
@@ -50,11 +50,8 @@ import {
   Smartphone,
   Banknote,
   Lock,
-  FileDown,
 } from "lucide-react"
-import confetti from "canvas-confetti"
-import { toast as sonnerToast } from "sonner"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { BkashLogo, NagadLogo, RocketLogo, GPayLogo } from "@/components/payment/payment-logos"
 
 // ── Zod Schemas ────────────────────────────────────────────────────
@@ -100,14 +97,9 @@ export function CheckoutPage() {
   const getShipping = useCartStore((s) => s.getShipping)
   const setView = useUIStore((s) => s.setView)
   const { isAuthenticated } = useAuthStore()
-  const { toast } = useToast()
 
   // Wait for Zustand persist to hydrate before checking auth
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setHydrated(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
+  const hydrated = useAuthStore((s) => s._hydrated)
 
   // Redirect to login if not authenticated (only after hydration)
   useEffect(() => {
@@ -119,8 +111,6 @@ export function CheckoutPage() {
   const [step, setStep] = useState<CheckoutStep>(1)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bkash")
   const [placingOrder, setPlacingOrder] = useState(false)
-  const [orderResult, setOrderResult] = useState<{ orderNumber: string; orderId: string } | null>(null)
-  const [downloadingInvoice, setDownloadingInvoice] = useState(false)
   const [giftWrap, setGiftWrap] = useState(false)
   const [giftMessage, setGiftMessage] = useState("")
   const GIFT_MESSAGE_MAX = 200
@@ -164,7 +154,7 @@ export function CheckoutPage() {
           setCouponData(null)
         } else {
           setCouponData(data)
-          toast({ title: "Coupon applied!", description: data.message })
+          toast.success("Coupon applied!", { description: data.message })
         }
       } else {
         setCouponError(data.error || "Invalid coupon code")
@@ -220,37 +210,7 @@ export function CheckoutPage() {
   }
   const deliveryEstimate = getEstimatedDelivery()
 
-  // ── Confetti on order confirmation ────────────────────────────
-  const confettiFired = useRef(false)
-  useEffect(() => {
-    if (orderResult && !confettiFired.current) {
-      confettiFired.current = true
-      // Center burst
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#f97316", "#fb923c", "#ffffff", "#22c55e", "#fbbf24"],
-      })
-      // Delayed side bursts
-      setTimeout(() => {
-        confetti({
-          particleCount: 50,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ["#f97316", "#fb923c", "#22c55e"],
-        })
-        confetti({
-          particleCount: 50,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ["#f97316", "#fb923c", "#22c55e"],
-        })
-      }, 250)
-    }
-  }, [orderResult])
+  // Confetti is now handled by the OrderConfirmation page
 
   const giftWrapCost = giftWrap ? 4.99 : 0
   const baseTotal = subtotal + shipping + tax + giftWrapCost
@@ -325,11 +285,7 @@ export function CheckoutPage() {
   const handleContinuePayment = useCallback(() => {
     if (paymentMethod === "bkash" || paymentMethod === "nagad" || paymentMethod === "rocket") {
       if (!paymentPhone.trim()) {
-        toast({
-          title: "Phone number required",
-          description: `Please enter your ${paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : "Rocket"} phone number to continue.`,
-          variant: "destructive",
-        })
+        toast.error(`Please enter your ${paymentMethod === "bkash" ? "bKash" : paymentMethod === "nagad" ? "Nagad" : "Rocket"} phone number to continue.`)
         return
       }
     }
@@ -341,7 +297,7 @@ export function CheckoutPage() {
     // Filter out virtual/combo items that don't exist in the database
     const validItems = items.filter((item) => !item.productId.startsWith("combo-"))
     if (validItems.length === 0) {
-      sonnerToast.error("Your cart contains only promotional items. Please add real products.")
+      toast.error("Your cart contains only promotional items. Please add real products.")
       return
     }
 
@@ -389,54 +345,19 @@ export function CheckoutPage() {
       }
 
       const order = await res.json()
-      setOrderResult({ orderNumber: order.orderNumber, orderId: order.id })
       clearCart()
-      toast({
-        title: "Order placed successfully!",
-        description: `Order #${order.orderNumber} has been placed.`,
-      })
+      // Navigate to the professional order confirmation page
+      setView({ type: 'order-confirmation', orderNumber: order.orderNumber, orderId: order.id })
     } catch (err) {
       console.error("[CheckoutPage] handlePlaceOrder failed:", err)
-      toast({
-        title: "Order failed",
-        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
-      })
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.")
     } finally {
       setPlacingOrder(false)
     }
   }, [items, subtotal, shipping, tax, baseTotal, couponDiscount, totalWithCoupon, giftWrapCost, shippingAddress, paymentMethod, paymentPhone, clearCart, toast, orderNotes, giftWrap, giftMessage, couponData])
 
-  const handleDownloadInvoice = async () => {
-    if (!orderResult) return
-    setDownloadingInvoice(true)
-    try {
-      const res = await fetch(`/api/orders/${orderResult.orderId}/invoice`)
-      if (!res.ok) {
-        throw new Error("Failed to generate invoice")
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `invoice-${orderResult.orderNumber}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-      sonnerToast.success("Invoice downloaded!")
-    } catch {
-      sonnerToast.error("Failed to download invoice. Please try again.")
-    } finally {
-      setDownloadingInvoice(false)
-    }
-  }
-
   const handleContinueShopping = () => {
     setView({ type: "products" })
-  }
-
-  const handleViewOrders = () => {
-    setView({ type: "orders" })
   }
 
   // ── Hydrating / Empty Cart ────────────────────────────────────
@@ -448,7 +369,7 @@ export function CheckoutPage() {
     )
   }
 
-  if (items.length === 0 && !orderResult) {
+  if (items.length === 0) {
     return (
       <main className="min-h-screen bg-background">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -497,78 +418,8 @@ export function CheckoutPage() {
     )
   }
 
-  // ── Order Confirmation ─────────────────────────────────────────
-  if (orderResult) {
-    return (
-      <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-          <div className="flex flex-col items-center gap-6 text-center">
-            {/* Success Icon */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-              <ShieldCheck className="h-10 w-10 text-green-600" />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-bold sm:text-3xl">Order Confirmed!</h1>
-              <p className="mt-2 text-muted-foreground">
-                Thank you for your purchase. Your order has been placed successfully.
-              </p>
-            </div>
-
-            <Card className="w-full">
-              <CardContent className="p-6">
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Order Number</span>
-                    <span className="font-bold text-orange-500">{orderResult.orderNumber}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="font-semibold">{formatPrice(totalWithCoupon)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Payment Method</span>
-                    <span className="font-medium capitalize">{paymentMethod.replace("_", " ")}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Shipping To</span>
-                    <span className="font-medium text-right">{shippingAddress.city}, {shippingAddress.state}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex w-full flex-col gap-3 sm:flex-row">
-              <Button variant="outline" className="flex-1" onClick={handleDownloadInvoice} disabled={downloadingInvoice}>
-                {downloadingInvoice ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Downloading...
-                  </>
-                ) : (
-                  <>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Download Invoice
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={handleViewOrders}>
-                View Orders
-                <Package className="ml-2 h-4 w-4" />
-              </Button>
-              <Button className="flex-1 bg-orange-500 text-white hover:bg-orange-600" onClick={handleContinueShopping}>
-                Continue Shopping
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </main>
-    )
-  }
+  // Order confirmation is now handled by the OrderConfirmation page
+  // After placing order, we navigate to { type: 'order-confirmation' } via setView
 
   // ── Enhanced Progress Indicator ────────────────────────────────
   const renderProgress = () => (
