@@ -132,18 +132,14 @@ export function ProfilePage() {
   const { theme, setTheme } = useTheme()
 
   // Wait for Zustand persist to hydrate before checking auth
-  const [authHydrated, setAuthHydrated] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setAuthHydrated(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
+  const hydrated = useAuthStore((s) => s._hydrated)
 
   // Redirect to login if not authenticated (only after hydration)
   useEffect(() => {
-    if (authHydrated && !isAuthenticated) {
+    if (hydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [authHydrated, isAuthenticated, setView])
+  }, [hydrated, isAuthenticated, setView])
 
   const [orderCount, setOrderCount] = useState(0)
   const [mounted, setMounted] = useState(false)
