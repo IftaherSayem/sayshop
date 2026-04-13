@@ -1,9 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const SESSION_COOKIE_NAME = 'sayshop_session'
 
 // ── Simple in-memory rate limiter ─────────────────────────────────────────────
 
@@ -91,62 +86,9 @@ function isSuspiciousUserAgent(ua: string | null): boolean {
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request,
   })
-
-  // ── Custom Session Validation (replaces Supabase Auth) ──
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)
-
-  if (sessionCookie?.value) {
-    // Create a Supabase client scoped to this request for data-only access.
-    // We do NOT use supabase.auth — session management is fully custom.
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value)
-            )
-            response = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
-
-    // Validate session token against session_tokens table
-    const { data: session } = await supabase
-      .from('session_tokens')
-      .select('id, expires_at')
-      .eq('token', sessionCookie.value)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle()
-
-    if (!session) {
-      // Session is expired or doesn't exist — clear the cookie.
-      // Also perform best-effort cleanup of stale rows.
-      response.cookies.delete(SESSION_COOKIE_NAME)
-
-      // Fire-and-forget: delete expired/invalid session rows
-      supabase
-        .from('session_tokens')
-        .delete()
-        .eq('token', sessionCookie.value)
-        .then(() => {
-          // Intentionally void — we don't want to block the response
-        })
-    }
-  }
 
   // ── Security headers ──
   response.headers.set('X-Content-Type-Options', 'nosniff')
