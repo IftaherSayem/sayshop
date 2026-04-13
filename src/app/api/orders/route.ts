@@ -415,10 +415,16 @@ export async function POST(request: NextRequest) {
     // ── Sanitize and validate order items ──
     const sanitizedItems = items.map((item: Record<string, unknown>) => ({
       product_id: typeof item.productId === 'string' ? item.productId : '',
-      name: sanitizeString(item.name, MAX_ITEM_NAME_LENGTH),
+      name: sanitizeString(
+        typeof item.name === 'string' ? item.name : '',
+        MAX_ITEM_NAME_LENGTH
+      ),
       price: parseFloat(item.price) || 0,
       quantity: Math.min(999, Math.max(1, parseInt(item.quantity) || 1)),
-      image: sanitizeString(item.image, MAX_ITEM_IMAGE_LENGTH),
+      image: sanitizeString(
+        typeof item.image === 'string' ? item.image : '',
+        MAX_ITEM_IMAGE_LENGTH
+      ),
     }))
 
     for (const item of sanitizedItems) {
@@ -428,12 +434,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-      if (!item.name) {
-        return NextResponse.json(
-          { error: 'Each item must have a valid name' },
-          { status: 400 }
-        )
-      }
+      // Name will be filled from the products table if missing
+      // (don't reject here — the server-side verification fetches the real name)
     }
 
     // ── Server-side price verification against products table ──
