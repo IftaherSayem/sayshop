@@ -128,13 +128,17 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
           setVerifyEmail(data.email)
           setVerificationStep("verify")
           toast.error(data.error || "Please verify your email first")
-          // Auto-send verification code
+          // Auto-send verification code and show it
           try {
-            await fetch("/api/auth/send-verification", {
+            const vRes = await fetch("/api/auth/send-verification", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: data.email }),
             })
+            const vData = await vRes.json()
+            if (vData.code) {
+              toast.info(`Your verification code: ${vData.code}`, { duration: 15000 })
+            }
           } catch {
             // Silent fail — user can use resend button
           }
@@ -184,10 +188,14 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
         toast.error(data.error || "Sign up failed")
         return
       }
-      // Show verification screen instead of logging in
+      // Show verification screen with the code visible (no real email sent yet)
       setVerifyEmail(data.user.email)
       setVerificationStep("verify")
-      toast.success("Account created! Please verify your email")
+      toast.success("Account created!")
+      // Show the verification code since no real email is sent
+      if (data.verificationCode) {
+        toast.info(`Your verification code: ${data.verificationCode}`, { duration: 15000 })
+      }
     } catch {
       toast.error("Network error. Please try again.")
     } finally {
@@ -238,7 +246,9 @@ export function AuthPage({ prefilledEmail }: { prefilledEmail?: string }) {
         toast.error(data.error || "Failed to send code")
         return
       }
-      toast.success("New verification code sent!")
+      if (data.code) {
+        toast.info(`Your verification code: ${data.code}`, { duration: 15000 })
+      }
       setResendCooldown(60)
       setVerifyCode(["", "", "", "", "", ""])
       otpRefs.current[0]?.focus()
