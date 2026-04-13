@@ -155,6 +155,9 @@ function updateTitle(view: AppView) {
     case "order-detail":
       document.title = "Order Details - " + baseTitle;
       break;
+    case "order-confirmation":
+      document.title = "Order Confirmed! - " + baseTitle;
+      break;
     case "wishlist":
       document.title = "Wishlist - " + baseTitle;
       break;
