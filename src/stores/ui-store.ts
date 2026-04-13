@@ -96,11 +96,12 @@ export const useUIStore = create<UIStore>((set, get) => ({
       } else {
         // Parse from URL as fallback
         const parsed = urlToView(window.location.pathname, window.location.search);
-        set((s) => ({
-          currentView: parsed,
-          viewHistory: [...s.viewHistory, s.currentView],
+        set((s) => set((state) => ({
+          currentView: event.state.view as AppView,
+          viewHistory: [...state.viewHistory, state.currentView],
           isSearchOpen: false,
         }));
+
         updateTitle(parsed);
       }
     });
