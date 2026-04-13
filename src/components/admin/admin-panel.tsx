@@ -152,29 +152,43 @@ function SidebarNav({ activeTab, onTabChange, onSignOut }: {
 
 export function AdminPanel() {
   const { user, isAuthenticated, logout } = useAuthStore()
+  const hydrated = useAuthStore((s) => s._hydrated)
   const setView = useUIStore((s) => s.setView)
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard")
   const [mobileOpen, setMobileOpen] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [accessDenied, setAccessDenied] = useState(false)
 
   const isAdmin = isAuthenticated && user?.role?.toUpperCase() === "ADMIN"
 
-  // Check admin access - verify with server and redirect if not admin
+  // Wait for Zustand persist to hydrate, then verify role with server
   useEffect(() => {
+    if (!hydrated) return
+
     const verify = async () => {
-      // Wait a tick for zustand persist to hydrate
-      await new Promise((r) => setTimeout(r, 100))
-      setChecking(false)
+      try {
+        const res = await fetch("/api/auth/me")
+        if (!res.ok) {
+          // Not authenticated
+          setAccessDenied(true)
+          setChecking(false)
+          return
+        }
+        const data = await res.json()
+        if (!data.user || data.user.role?.toUpperCase() !== "ADMIN") {
+          setAccessDenied(true)
+          toast.error("Access denied. Admin privileges required.")
+          // Delay redirect so user sees the message
+          setTimeout(() => setView({ type: "home" }), 1500)
+        }
+      } catch {
+        // Network error, rely on client-side state
+      } finally {
+        setChecking(false)
+      }
     }
     verify()
-  }, [])
-
-  useEffect(() => {
-    if (!checking && isAuthenticated && user?.role?.toUpperCase() !== "ADMIN") {
-      toast.error("Access denied. Admin privileges required.")
-      setView({ type: "home" })
-    }
-  }, [checking, isAuthenticated, user, setView])
+  }, [hydrated, setView])
 
   const handleSignOut = async () => {
     try {
@@ -190,6 +204,7 @@ export function AdminPanel() {
     setMobileOpen(false)
   }
 
+  // Loading state — waiting for hydration + server check
   if (checking) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
@@ -201,7 +216,30 @@ export function AdminPanel() {
     )
   }
 
-  if (!isAdmin) return null
+  // Access denied — show proper message
+  if (accessDenied || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+            <Shield className="h-8 w-8 text-red-600 dark:text-red-400" />
+          </div>
+          <h2 className="text-xl font-bold">Access Denied</h2>
+          <p className="text-sm text-muted-foreground">
+            You don&apos;t have permission to access the admin panel. Admin privileges are required.
+          </p>
+          <div className="flex gap-3 mt-2">
+            <Button variant="outline" onClick={() => setView({ type: "auth" })}>
+              Sign In
+            </Button>
+            <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setView({ type: "home" })}>
+              Go Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
