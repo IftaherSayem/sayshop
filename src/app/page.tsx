@@ -87,8 +87,8 @@ function HomePage() {
 }
 
 export default function Home() {
-  const currentView = useUIStore((s) => s.currentView)
-  const initUrlSync = useUIStore((s) => s.initUrlSync)
+  const currentView = useUIStore((state) => state.currentView)
+  const initUrlSync = useUIStore((state) => state.initUrlSync)
   const urlSyncInitialized = useRef(false)
   const authRestored = useRef(false)
 
