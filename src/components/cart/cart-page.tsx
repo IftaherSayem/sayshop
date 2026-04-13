@@ -75,12 +75,19 @@ export function CartPage() {
   const { isAuthenticated } = useAuthStore()
   const { toast } = useToast()
 
-  // Redirect to login if not authenticated
+  // Wait for Zustand persist to hydrate before checking auth
+  const [authHydrated, setAuthHydrated] = useState(false)
   useEffect(() => {
-    if (!isAuthenticated) {
+    const timer = setTimeout(() => setAuthHydrated(true), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Redirect to login if not authenticated (only after hydration)
+  useEffect(() => {
+    if (authHydrated && !isAuthenticated) {
       setView({ type: 'auth' })
     }
-  }, [isAuthenticated, setView])
+  }, [authHydrated, isAuthenticated, setView])
 
   // Save for later
   const savedForLater = useCartStore((s) => s.savedForLater)
