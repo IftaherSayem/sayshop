@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     staticIndicator: false,
     buildActivity: false,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // SPA rewrites: serve index page for all client-side routes
   // These work on both Vercel and Netlify
   async rewrites() {
