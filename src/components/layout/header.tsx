@@ -205,15 +205,17 @@ export function Header() {
   }, [setView])
 
   const navigateToProducts = useCallback(
-    (categoryId?: string) => {
-      if (categoryId) {
-        setView({ type: "products", categoryId })
+    (categoryId?: string, categorySlug?: string) => {
+      if (categorySlug) {
+        setView({ type: "products", categorySlug });
+      } else if (categoryId) {
+        setView({ type: "products", categoryId });
       } else {
-        setView({ type: "products" })
+        setView({ type: "products" });
       }
     },
     [setView]
-  )
+  );
 
   const navigateToCart = useCallback(() => {
     setView({ type: "cart" })
@@ -228,8 +230,8 @@ export function Header() {
       setView({ type: "auth" })
       return
     }
-    setView({ type: "profile" })
-  }, [setView, isAuthenticated])
+    setView({ type: "profile", id: authUser?.id })
+  }, [setView, isAuthenticated, authUser])
 
   const navigateToAuth = useCallback(() => {
     setView({ type: "auth" })
@@ -282,7 +284,7 @@ export function Header() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium line-clamp-1">{item.name}</p>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-orange-500">
+                      <span className="text-sm font-semibold text-blue-600">
                         {formatPrice(item.price)}
                       </span>
                       {item.comparePrice && (
@@ -297,7 +299,7 @@ export function Header() {
             </div>
             <div className="border-t">
               <button
-                className="flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors font-medium"
+                className="flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-orange-950/30 transition-colors font-medium"
                 onClick={handleSearch}
               >
                 <Search className="h-4 w-4" />
@@ -311,55 +313,38 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full">
-      {/* ===== Top Promo Bar ===== */}
-      <div className="bg-neutral-900 text-neutral-300 text-xs sm:text-sm">
-        <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4">
-          <span className="hidden sm:inline">
-            Free shipping on orders over $50 🚚
-          </span>
-          <span className="sm:hidden flex-1 text-center">
-            Free shipping over $50 🚚
-          </span>
-
-          {/* Language selector */}
-          <button
-            onClick={() => setLang(lang === "EN" ? "ES" : "EN")}
-            className="ml-auto flex items-center gap-1 rounded px-2 py-0.5 transition-colors hover:bg-neutral-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-          >
-            <GlobeIcon className="h-3.5 w-3.5" />
-            {lang}
-            <ChevronDown className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-
+    <>
+      <div className="h-14 sm:h-16 lg:h-[104px] w-full" /> {/* Spacer for fixed header */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full animate-in fade-in duration-500">
       {/* ===== Main Bar ===== */}
       <div className={`border-b bg-background transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md shadow-sm' : ''}`}>
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:h-16">
-          {/* Mobile hamburger */}
-          <button
-            className="flex items-center lg:hidden"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Open menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16">
+          {/* Left side: Hamburger + Logo */}
+          <div className="flex flex-1 items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              className="flex items-center md:hidden"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+  
+            {/* Logo */}
+            <button
+              onClick={navigateHome}
+              className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+            >
+              <Image src="/images/logo-premium.png" alt="Say Shop" width={60} height={40} className="h-10 w-auto rounded-lg object-contain" />
+              <span className="hidden sm:inline-block text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 sm:text-xl">
+                Say Shop
+              </span>
+            </button>
+          </div>
 
-          {/* Logo */}
-          <button
-            onClick={navigateHome}
-            className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
-          >
-            <Image src="/images/logo.png" alt="Say Shop" width={40} height={40} className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg object-cover" />
-            <span className="text-lg font-bold tracking-tight text-orange-500 sm:text-xl">
-              Say Shop
-            </span>
-          </button>
-
-          {/* Search Bar — hidden on mobile, shown in Sheet instead */}
-          <div className="hidden flex-1 items-center gap-0 md:flex">
-            <div className="relative flex w-full max-w-2xl" ref={searchContainerRef}>
+          {/* Center: Search Bar — hidden on mobile, shown in Sheet instead */}
+          <div className="hidden flex-[2] items-center justify-center px-4 md:flex lg:px-8">
+            <div className="relative flex w-full max-w-2xl mx-auto" ref={searchContainerRef}>
               <div className="relative flex w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
@@ -374,13 +359,13 @@ export function Header() {
                     if (searchInput.trim()) setShowSuggestions(true)
                   }}
                   onKeyDown={handleKeyDown}
-                  className="h-11 pl-10 pr-4 rounded-xl border-border/60 bg-muted/40 focus-visible:bg-background focus-visible:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 transition-all duration-200 shadow-sm focus-visible:shadow-md focus-visible:shadow-orange-500/10"
+                  className="h-11 pl-10 pr-4 rounded-xl border-border/60 bg-muted/40 focus-visible:bg-background focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-600/20 transition-all duration-200 shadow-sm focus-visible:shadow-md focus-visible:shadow-blue-600/10"
                 />
               </div>
               {showSuggestions && searchInput.trim() && (
                 <Button
                   onClick={handleSearch}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 px-4 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 h-9 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
                 >
                   <Search className="h-4 w-4" />
                 </Button>
@@ -388,69 +373,60 @@ export function Header() {
               {renderSuggestionsDropdown()}
             </div>
           </div>
-
           {/* Right Icons */}
-          <div className="ml-auto flex items-center gap-1 sm:gap-2">
-            {/* Compare */}
-            <button
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-              aria-label="Compare"
-              onClick={() => setView({ type: "compare" })}
-            >
-              <GitCompareArrows className="h-5 w-5" />
-              {compareItems.length > 0 && (
-                <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 p-0 text-[10px] font-bold text-white border-0">
-                  {compareItems.length > 99 ? "99+" : compareItems.length}
-                </Badge>
-              )}
-            </button>
+          <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2 text-zinc-700 dark:text-zinc-300">
+            {isAuthenticated && (
+              <>
+                {/* Compare */}
+                <button
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  aria-label="Compare"
+                  onClick={() => setView({ type: "compare" })}
+                >
+                  <GitCompareArrows className="h-5 w-5" />
+                  {compareItems.length > 0 && (
+                    <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 p-0 text-[10px] font-bold text-white border-0">
+                      {compareItems.length > 99 ? "99+" : compareItems.length}
+                    </Badge>
+                  )}
+                </button>
 
-            {/* Wishlist */}
-            <button
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-              aria-label="Wishlist"
-              onClick={() => setView({ type: "wishlist" })}
-            >
-              <Heart className="h-5 w-5" />
-              {wishlistItems.length > 0 && (
-                <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 p-0 text-[10px] font-bold text-white border-0">
-                  {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
-                </Badge>
-              )}
-            </button>
+                {/* Wishlist */}
+                <button
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  aria-label="Wishlist"
+                  onClick={() => setView({ type: "wishlist" })}
+                >
+                  <Heart className="h-5 w-5" />
+                  {wishlistItems.length > 0 && (
+                    <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 p-0 text-[10px] font-bold text-white border-0">
+                      {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
+                    </Badge>
+                  )}
+                </button>
 
-            {/* Notifications (hidden on small mobile screens) */}
-            <div className="hidden sm:block">
-              <NotificationDropdown />
-            </div>
+                {/* Notifications (hidden on small mobile screens) */}
+                <div className="hidden sm:block">
+                  <NotificationDropdown />
+                </div>
+              </>
+            )}
 
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Toggle theme"
             >
               <Sun className="h-5 w-5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
             </button>
 
-            {/* Admin Panel Quick Access */}
-            {isAuthenticated && authUser?.role?.toUpperCase() === 'ADMIN' && (
-              <button
-                onClick={() => setView({ type: "admin" })}
-                className="relative flex h-10 items-center gap-1.5 rounded-full px-3 bg-orange-500 text-white text-xs font-semibold transition-colors hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                aria-label="Admin Panel"
-              >
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Admin</span>
-              </button>
-            )}
-
             {/* User Dropdown */}
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                   aria-label="Account"
                 >
                   <User className="h-5 w-5" />
@@ -479,10 +455,10 @@ export function Header() {
                       <GitCompareArrows className="mr-2 h-4 w-4" />
                       Compare Products
                     </DropdownMenuItem>
-                    {authUser?.role?.toUpperCase() === 'ADMIN' && (
-                      <DropdownMenuItem onClick={() => setView({ type: "admin" })} className="cursor-pointer text-orange-600 focus:text-orange-600">
+                    {['ADMIN', 'MANAGER', 'SUPPORT'].includes(authUser?.role?.toUpperCase() || '') && (
+                      <DropdownMenuItem onClick={() => setView({ type: "admin", role: authUser?.role?.toLowerCase() })} className="cursor-pointer text-blue-700 focus:text-blue-700 font-medium">
                         <Shield className="mr-2 h-4 w-4" />
-                        Admin Panel
+                        {authUser?.role?.toUpperCase() === 'MANAGER' ? 'Control Panel' : 'Admin Panel'}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 focus:text-red-500">
@@ -516,13 +492,13 @@ export function Header() {
             {/* Cart */}
             <button
               onClick={navigateToCart}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Cart"
             >
               <ShoppingCart className="h-5 w-5" />
               <AnimatePresence>
                 {totalItems > 0 && (
-                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] font-bold text-white border-0">
+                  <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 p-0 text-[10px] font-bold text-white border-0">
                     <motion.span
                       key={totalItems}
                       initial={{ scale: 0.5, y: -10 }}
@@ -548,11 +524,11 @@ export function Header() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="h-10 pl-10 pr-4 rounded-xl border-border/60 bg-muted/40 focus-visible:bg-background focus-visible:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-500/20 transition-all duration-200"
+              className="h-10 pl-10 pr-4 rounded-xl border-border/60 bg-muted/40 focus-visible:bg-background focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-600/20 transition-all duration-200"
             />
             <Button
               onClick={handleSearch}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
             >
               <Search className="h-3.5 w-3.5" />
             </Button>
@@ -568,7 +544,7 @@ export function Header() {
               <li>
                 <button
                   onClick={() => navigateToProducts()}
-                  className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   All Products
                 </button>
@@ -576,8 +552,8 @@ export function Header() {
               {categories.map((cat) => (
                 <li key={cat.id}>
                   <button
-                    onClick={() => navigateToProducts(cat.id)}
-                    className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-400 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    onClick={() => navigateToProducts(cat.id, cat.slug)}
+                    className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-400 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                   >
                     {cat.name}
                   </button>
@@ -594,7 +570,7 @@ export function Header() {
           <SheetHeader className="border-b px-4 py-4">
             <SheetTitle className="flex items-center gap-2">
               <Image src="/images/logo.png" alt="Say Shop" width={32} height={32} className="h-6 w-6 rounded-md object-cover" />
-              <span className="text-orange-500">Say Shop</span>
+              <span className="text-blue-600">Say Shop</span>
             </SheetTitle>
           </SheetHeader>
 
@@ -610,7 +586,7 @@ export function Header() {
                     navigateToProducts()
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-200 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-200 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   All Products
                 </button>
@@ -619,10 +595,10 @@ export function Header() {
                 <li key={cat.id}>
                   <button
                     onClick={() => {
-                      navigateToProducts(cat.id)
+                      navigateToProducts(cat.id, cat.slug)
                       setMobileMenuOpen(false)
                     }}
-                    className="flex w-full items-center rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    className="flex w-full items-center rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                   >
                     {cat.name}
                   </button>
@@ -648,49 +624,42 @@ export function Header() {
                     navigateToProfile()
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   <User className="h-4 w-4" />
                   {isAuthenticated ? "My Account" : "Sign In / Sign Up"}
                 </button>
               </li>
-              {isAuthenticated && (
-                <li>
-                  <button
-                    onClick={() => {
-                      handleSignOut()
-                      setMobileMenuOpen(false)
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </button>
-                </li>
-              )}
+
               <li>
                 <button
                   onClick={() => {
                     navigateToOrders()
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   <Package className="h-4 w-4" />
                   My Orders
                 </button>
               </li>
-              {authUser?.role?.toUpperCase() === 'ADMIN' && (
+              {['ADMIN', 'MANAGER', 'SUPPORT'].includes(authUser?.role?.toUpperCase() || '') && (
                 <li>
                   <button
                     onClick={() => {
-                      setView({ type: "admin" })
+                      setView({ type: "admin", role: authUser?.role?.toLowerCase() })
                       setMobileMenuOpen(false)
                     }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-orange-600 font-medium transition-colors hover:bg-orange-50 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+                      authUser?.role?.toUpperCase() === 'MANAGER' 
+                        ? 'text-purple-600 hover:bg-purple-50 focus-visible:ring-purple-500' 
+                        : authUser?.role?.toUpperCase() === 'SUPPORT'
+                          ? 'text-blue-600 hover:bg-blue-50 focus-visible:ring-blue-500'
+                          : 'text-blue-700 hover:bg-blue-50 focus-visible:ring-blue-600'
+                    }`}
                   >
                     <Shield className="h-4 w-4" />
-                    Admin Panel
+                    {authUser?.role?.toLowerCase() === 'manager' ? 'Control Panel' : authUser?.role?.toLowerCase() === 'support' ? 'Support Panel' : 'Admin Panel'}
                   </button>
                 </li>
               )}
@@ -700,12 +669,12 @@ export function Header() {
                     setView({ type: "wishlist" })
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   <Heart className="h-4 w-4" />
                   Wishlist
                   {wishlistItems.length > 0 && (
-                    <Badge className="ml-auto h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white border-0">
+                    <Badge className="ml-auto h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white border-0">
                       {wishlistItems.length}
                     </Badge>
                   )}
@@ -717,7 +686,7 @@ export function Header() {
                     setView({ type: "compare" })
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   <GitCompareArrows className="h-4 w-4" />
                   Compare
@@ -734,12 +703,12 @@ export function Header() {
                     navigateToCart()
                     setMobileMenuOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   Cart
                   {totalItems > 0 && (
-                    <Badge className="ml-auto h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white border-0">
+                    <Badge className="ml-auto h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white border-0">
                       {totalItems}
                     </Badge>
                   )}
@@ -750,6 +719,7 @@ export function Header() {
         </SheetContent>
       </Sheet>
     </header>
+    </>
   )
 }
 

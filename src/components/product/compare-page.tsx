@@ -78,7 +78,7 @@ export function ComparePage() {
       label: 'Price',
       render: (item: CompareItem) => (
         <div className="space-y-1">
-          <span className={`text-lg font-bold ${item.price === lowestPrice && items.length > 1 ? 'text-orange-500' : ''}`}>
+          <span className={`text-lg font-bold ${item.price === lowestPrice && items.length > 1 ? 'text-blue-600' : ''}`}>
             {formatPrice(item.price)}
           </span>
           {item.comparePrice && (
@@ -92,7 +92,7 @@ export function ComparePage() {
             </div>
           )}
           {item.price === lowestPrice && items.length > 1 && (
-            <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-0 text-[10px]">
+            <Badge className="bg-blue-100 text-orange-700 dark:bg-orange-900/30 dark:text-blue-400 border-0 text-[10px]">
               Lowest Price
             </Badge>
           )}
@@ -202,7 +202,7 @@ export function ComparePage() {
             Add products to your comparison list to see them side by side. You can compare up to 4 products at a time.
           </p>
           <Button
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setView({ type: 'products' })}
           >
             Browse Products
@@ -240,8 +240,8 @@ export function ComparePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <Scale className="h-5 w-5 text-orange-500" />
+          <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <Scale className="h-5 w-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Product Comparison</h1>
@@ -317,7 +317,7 @@ export function ComparePage() {
 
                     {/* Product name */}
                     <h3
-                      className="font-medium text-sm line-clamp-2 mb-1 hover:text-orange-500 transition-colors cursor-pointer"
+                      className="font-medium text-sm line-clamp-2 mb-1 hover:text-blue-600 transition-colors cursor-pointer"
                       onClick={() => setView({ type: 'product-detail', productId: item.productId })}
                     >
                       {item.name}
@@ -363,7 +363,7 @@ export function ComparePage() {
                     {/* Add to Cart */}
                     <Button
                       size="sm"
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs"
                       onClick={() => handleAddToCart(item)}
                       disabled={item.stock === 0}
                     >
@@ -384,7 +384,7 @@ export function ComparePage() {
               className="w-[220px] sm:w-[240px] flex-shrink-0"
             >
               <Card
-                className="flex items-center justify-center border-2 border-dashed border-border/50 cursor-pointer hover:border-orange-300 transition-colors min-h-[380px]"
+                className="flex items-center justify-center border-2 border-dashed border-border/50 cursor-pointer hover:border-blue-300 transition-colors min-h-[380px]"
                 onClick={() => setView({ type: 'products' })}
               >
                 <CardContent className="flex flex-col items-center justify-center gap-2 p-4 text-center">

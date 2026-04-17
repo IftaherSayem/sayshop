@@ -25,7 +25,7 @@ export function BkashLogo({ className, size = "md" }: PaymentLogoProps) {
       width={w}
       height={h}
       className={`object-contain ${className || ""}`}
-      style={className ? { width: 'auto', height: undefined } : undefined}
+      style={{ height: 'auto', width: 'auto', maxHeight: h * 1.5 }}
     />
   )
 }
@@ -40,7 +40,7 @@ export function NagadLogo({ className, size = "md" }: PaymentLogoProps) {
       width={w}
       height={h}
       className={`object-contain ${className || ""}`}
-      style={className ? { width: 'auto', height: undefined } : undefined}
+      style={{ height: 'auto', width: 'auto', maxHeight: h * 1.5 }}
     />
   )
 }
@@ -55,7 +55,7 @@ export function RocketLogo({ className, size = "md" }: PaymentLogoProps) {
       width={w}
       height={h}
       className={`object-contain ${className || ""}`}
-      style={className ? { width: 'auto', height: undefined } : undefined}
+      style={{ height: 'auto', width: 'auto', maxHeight: h * 1.5 }}
     />
   )
 }
@@ -70,7 +70,7 @@ export function GPayLogo({ className, size = "md" }: PaymentLogoProps) {
       width={w}
       height={h}
       className={`object-contain ${className || ""}`}
-      style={className ? { width: 'auto', height: undefined } : undefined}
+      style={{ height: 'auto', width: 'auto', maxHeight: h * 1.2 }}
     />
   )
 }

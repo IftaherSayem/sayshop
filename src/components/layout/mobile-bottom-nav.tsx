@@ -48,13 +48,13 @@ export function MobileBottomNav() {
         {tabs.map((tab) => {
           const isActive = getIsActive(tab.type)
           const Icon = tab.icon
-          const badgeCount = tab.badge === "cart" ? totalCartItems : 0
+          const badgeCount = (tab as any).badge === "cart" ? totalCartItems : 0
 
           return (
             <button
               key={tab.type}
               onClick={() => handleTabClick(tab.type)}
-              className="relative flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg"
+              className="relative flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg"
               aria-label={tab.label}
               aria-current={isActive ? "page" : undefined}
             >
@@ -68,12 +68,12 @@ export function MobileBottomNav() {
                 >
                   <Icon
                     className={`h-5 w-5 transition-colors duration-200 ${
-                      isActive ? "text-orange-500" : "text-muted-foreground"
+                      isActive ? "text-blue-600" : "text-muted-foreground"
                     }`}
                   />
                 </motion.div>
                 {badgeCount > 0 && (
-                  <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
                     {badgeCount > 99 ? "99+" : badgeCount}
                   </span>
                 )}
@@ -84,14 +84,14 @@ export function MobileBottomNav() {
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-orange-500 rounded-full border-2 border-background"
+                      className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-blue-600 rounded-full border-2 border-background"
                     />
                   )}
                 </AnimatePresence>
               </div>
               <span
                 className={`text-[10px] font-medium transition-colors duration-200 ${
-                  isActive ? "text-orange-500" : "text-muted-foreground"
+                  isActive ? "text-blue-600" : "text-muted-foreground"
                 }`}
               >
                 {tab.label}
@@ -99,7 +99,7 @@ export function MobileBottomNav() {
               {isActive && (
                 <motion.div
                   layoutId="mobile-nav-indicator"
-                  className="absolute -top-px left-3 right-3 h-0.5 rounded-full bg-orange-500"
+                  className="absolute -top-px left-3 right-3 h-0.5 rounded-full bg-blue-600"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}

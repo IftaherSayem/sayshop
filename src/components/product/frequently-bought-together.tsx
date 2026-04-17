@@ -137,7 +137,7 @@ export function FrequentlyBoughtTogether({ categoryId, productId }: FrequentlyBo
                   </div>
                   <div className="p-3 flex flex-col flex-1 gap-2">
                     <h3
-                      className="text-sm font-medium line-clamp-2 hover:text-orange-500 transition-colors"
+                      className="text-sm font-medium line-clamp-2 hover:text-blue-600 transition-colors"
                       onClick={() => handleCardClick(p)}
                     >
                       {p.name}
@@ -152,7 +152,7 @@ export function FrequentlyBoughtTogether({ categoryId, productId }: FrequentlyBo
                     </div>
                     <Button
                       size="sm"
-                      className="h-8 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium w-full"
+                      className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium w-full"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleAddToCart(p);

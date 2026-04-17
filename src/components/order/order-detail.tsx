@@ -46,6 +46,7 @@ import {
   Ban,
   RefreshCw,
   Clock as ClockIcon,
+  Bike,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -85,17 +86,18 @@ interface OrderWithItems extends Order {
 // ── Progress Tracker Config ────────────────────────────────────────
 type OrderStatus = Order["status"]
 
-const PROGRESS_STEPS: { key: OrderStatus | "placed"; label: string; icon: typeof Package }[] = [
+const PROGRESS_STEPS: { key: OrderStatus | "placed"; label: string; icon: any }[] = [
   { key: "placed", label: "Order Placed", icon: ShoppingBag },
   { key: "processing", label: "Processing", icon: Clock },
   { key: "shipped", label: "Shipped", icon: Truck },
+  { key: "out_for_delivery", label: "Out for Delivery", icon: Bike },
   { key: "delivered", label: "Delivered", icon: Check },
 ]
 
-const STATUS_SEQUENCE: OrderStatus[] = ["pending", "processing", "shipped", "delivered"]
+const STATUS_SEQUENCE: OrderStatus[] = ["pending", "processing", "shipped", "out_for_delivery", "delivered"]
 
 function getStepIndex(status: OrderStatus): number {
-  if (status === "cancelled") return -1
+  if (status === "cancelled") return -2 // Special value for cancelled
   return STATUS_SEQUENCE.indexOf(status)
 }
 
@@ -141,7 +143,7 @@ const STATUS_CONFIG: Record<
   },
   shipped: {
     label: "Shipped",
-    color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+    color: "bg-blue-100 text-orange-800 dark:bg-orange-900/30 dark:text-blue-400",
   },
   out_for_delivery: {
     label: "Out for Delivery",
@@ -184,8 +186,8 @@ function ProgressTracker({ status }: { status: OrderStatus }) {
             lineClass = "bg-green-500"
             labelClass = "text-green-600 dark:text-green-400"
           } else if (isCurrent) {
-            circleClass = "border-orange-500 bg-orange-500 text-white"
-            labelClass = "text-orange-500"
+            circleClass = "border-blue-600 bg-blue-600 text-white"
+            labelClass = "text-blue-600"
           }
 
           return (
@@ -246,8 +248,8 @@ function ProgressTracker({ status }: { status: OrderStatus }) {
             circleClass = "border-green-500 bg-green-500 text-white"
             labelClass = "text-green-600 dark:text-green-400"
           } else if (isCurrent) {
-            circleClass = "border-orange-500 bg-orange-500 text-white"
-            labelClass = "text-orange-500 font-semibold"
+            circleClass = "border-blue-600 bg-blue-600 text-white"
+            labelClass = "text-blue-600 font-semibold"
           }
 
           return (
@@ -335,7 +337,7 @@ function OrderDetailSkeleton() {
 
 // ── Payment Method Display ─────────────────────────────────────────
 function PaymentMethodDisplay({ method }: { method: string }) {
-  const configs: Record<string, { icon: typeof CreditCard; label: string; extra?: string }> = {
+  const configs: Record<string, { icon: React.ComponentType<{ className?: string }>; label: string; extra?: string }> = {
     credit_card: { icon: CreditCard, label: "Credit Card", extra: "Visa, Mastercard, Amex" },
     paypal: {
       icon: ({ className }: { className?: string }) => (
@@ -732,11 +734,11 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="mb-6"
           >
-            <Card className="overflow-hidden border-l-4 border-l-orange-500">
+            <Card className="overflow-hidden border-l-4 border-l-blue-600">
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950/30">
-                    <Calendar className="h-6 w-6 text-orange-500" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-orange-950/30">
+                    <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold">Estimated Delivery</p>
@@ -756,7 +758,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="h-4 w-4 text-orange-500" />
+                <MapPin className="h-4 w-4 text-blue-600" />
                 Shipping Address
               </CardTitle>
             </CardHeader>
@@ -780,7 +782,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard className="h-4 w-4 text-orange-500" />
+                <CreditCard className="h-4 w-4 text-blue-600" />
                 Payment Method
               </CardTitle>
             </CardHeader>
@@ -794,7 +796,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-4 w-4 text-orange-500" />
+              <Package className="h-4 w-4 text-blue-600" />
               Order Items ({items.length})
             </CardTitle>
           </CardHeader>
@@ -870,7 +872,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
 
         {/* Order Summary */}
         <Card className="relative mb-6 overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600" />
+          <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-400 via-blue-600 to-blue-700" />
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Order Summary</CardTitle>
           </CardHeader>
@@ -894,7 +896,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             <Separator />
             <div className="flex items-center justify-between text-lg font-bold">
               <span>Total</span>
-              <span className="text-orange-500">{formatPrice(order.total)}</span>
+              <span className="text-blue-600">{formatPrice(order.total)}</span>
             </div>
           </CardContent>
         </Card>
@@ -936,7 +938,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
             {downloadingInvoice ? "Downloading..." : "Download Invoice"}
           </Button>
           <Button
-            className="flex-1 bg-orange-500 text-white hover:bg-orange-600"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
             onClick={handleReorder}
             disabled={reordering}
           >
@@ -968,7 +970,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="outline"
-                    className="flex-1 gap-2 border-orange-500 text-orange-500 hover:bg-orange-50"
+                    className="flex-1 gap-2 border-blue-600 text-blue-600 hover:bg-blue-50"
                   >
                     <RotateCcw className="h-4 w-4" />
                     Request Return
@@ -991,8 +993,8 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                             key={idx}
                             className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                               selectedReturnItems.has(idx)
-                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
-                                : "border-border hover:border-orange-300"
+                                ? "border-blue-600 bg-blue-50 dark:bg-orange-950/30"
+                                : "border-border hover:border-blue-300"
                             }`}
                           >
                             <Checkbox

@@ -34,16 +34,16 @@ function transformProduct(p: DbProductRow) {
     name: p.name,
     slug: p.slug,
     description: p.description || '',
-    shortDesc: null,
+    shortDesc: (p as any).short_desc || null,
     price: p.discount_price ?? p.base_price,
     comparePrice: p.discount_price ? p.base_price : null,
     images: JSON.stringify(images),
-    categoryId: p.category_id,
-    brand: null,
+    categoryId: p.category_id ?? '',
+    brand: (p as any).brand || null,
     stock: p.inventory?.stock ?? 0,
-    rating: 0,
-    reviewCount: 0,
-    featured: false,
+    rating: Number((p as any).rating || 0),
+    reviewCount: Number((p as any).review_count || 0),
+    featured: (p as any).featured || false,
     active: p.is_active,
     tags: JSON.stringify(tags),
     createdAt: p.created_at,
@@ -92,17 +92,20 @@ export async function GET(request: NextRequest) {
       const products = (data || []) as unknown as DbProductRow[]
       const transformed = products.map(transformProduct)
 
-      return NextResponse.json({
+      const res = NextResponse.json({
         products: transformed,
         total: transformed.length,
         page: 1,
         totalPages: 1,
       })
+      res.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+      return res
     }
 
     // ── Standard listing with search, filter, sort, pagination ──
     const search = searchParams.get('search') || ''
     const categoryId = searchParams.get('categoryId') || ''
+    const categorySlug = searchParams.get('category') || ''
     const sort = searchParams.get('sort') || 'newest'
     const minPrice = searchParams.get('minPrice')
       ? parseFloat(searchParams.get('minPrice')!)
@@ -113,10 +116,13 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '12')))
 
+    // ── Optimized High-Performance Selection (Rule: Minimal Payload) ──
+    const LEAN_COLUMNS = 'id, name, slug, base_price, discount_price, category_id, is_active, images, created_at, featured, categories(id, name, slug), inventory(stock)'
+
     // Build base query
     let query = supabase
       .from('products')
-      .select('*, categories(id, name, slug), inventory(stock)', { count: 'exact' })
+      .select(LEAN_COLUMNS, { count: 'exact' })
       .eq('is_active', true)
       .is('deleted_at', null)
 
@@ -132,16 +138,21 @@ export async function GET(request: NextRequest) {
         // Full-text search failed, fallback to ILIKE on name
         query = supabase
           .from('products')
-          .select('*, categories(id, name, slug), inventory(stock)', { count: 'exact' })
+          .select(LEAN_COLUMNS, { count: 'exact' })
           .eq('is_active', true)
           .is('deleted_at', null)
           .ilike('name', `%${search}%`)
       }
     }
 
-    // Category filter
+    // Category filter (by ID or Slug)
     if (categoryId) {
       query = query.eq('category_id', categoryId)
+    } else if (categorySlug) {
+      // Use a subquery/RPC or join filtering if supported, but here we'll use a simple eq on the joined column
+      // In Supabase, you can filter on joined tables: .eq('categories.slug', categorySlug)
+      // Note: This requires the foreign key relationship to be correctly defined
+      query = query.filter('categories.slug', 'eq', categorySlug)
     }
 
     // Price filter on base_price
@@ -175,17 +186,10 @@ export async function GET(request: NextRequest) {
     query = query.range(from, to)
 
     const { data, count, error } = await query
-
+    
     if (error) {
       console.error('[PRODUCTS GET] Supabase error:', JSON.stringify(error))
-      return NextResponse.json(
-        {
-          error: 'Failed to fetch products',
-          details: error.message,
-          code: error.code,
-        },
-        { status: 500 }
-      )
+      throw error 
     }
 
     const products = (data || []) as unknown as DbProductRow[]
@@ -193,12 +197,16 @@ export async function GET(request: NextRequest) {
     const total = count || 0
     const totalPages = Math.ceil(total / limit)
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       products: transformed,
       total,
       page,
       totalPages,
     })
+
+    // Browser/Edge caching: 5 minutes max-age, 24 hours stale-while-revalidate
+    res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400')
+    return res
   } catch (error) {
     console.error('[PRODUCTS GET] Unhandled error:', error)
     return NextResponse.json(
@@ -256,42 +264,22 @@ export async function POST(request: NextRequest) {
     // Auto-generate slug from name if not provided
     const slug = providedSlug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
-    // Check slug uniqueness
-    const { data: existingSlug } = await supabase
-      .from('products')
-      .select('id')
-      .eq('slug', slug)
-      .is('deleted_at', null)
-      .single()
+    // ── High Speed Performance: Parallel Validation (Rule 7) ──
+    const [existingRes, categoryRes] = await Promise.all([
+      supabase.from('products').select('id').eq('slug', slug).is('deleted_at', null).maybeSingle(),
+      supabase.from('categories').select('id').eq('id', categoryId).maybeSingle()
+    ])
 
-    if (existingSlug) {
-      return NextResponse.json(
-        { error: 'A product with this slug already exists' },
-        { status: 409 }
-      )
-    }
-
-    // Verify category exists
-    const { data: category } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('id', categoryId)
-      .single()
-
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
-      )
-    }
+    if (existingRes.data) return NextResponse.json({ error: 'A product with this slug already exists' }, { status: 409 })
+    if (!categoryRes.data) return NextResponse.json({ error: 'Category not found' }, { status: 404 })
 
     // Build insert data with snake_case column names
     const insertData: Record<string, unknown> = {
       name,
       slug,
       description: description || null,
-      base_price: parseFloat(basePrice),
-      discount_price: discountPrice ? parseFloat(discountPrice) : null,
+      base_price: Number(basePrice),
+      discount_price: discountPrice != null ? Number(discountPrice) : null,
       category_id: categoryId,
       is_active: isActive !== undefined ? isActive : true,
       images: Array.isArray(images) ? images : [],

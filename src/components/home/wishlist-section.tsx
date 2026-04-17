@@ -35,8 +35,8 @@ export function WishlistSection() {
         >
         <div className="max-w-7xl mx-auto px-4">
           <div className="border border-dashed border-border rounded-2xl p-8 flex flex-col items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/30">
-              <Heart className="h-7 w-7 text-orange-400" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-orange-950/30">
+              <Heart className="h-7 w-7 text-blue-400" />
             </div>
             <h3 className="text-lg font-semibold">Your wishlist is empty</h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
@@ -44,7 +44,7 @@ export function WishlistSection() {
             </p>
             <Button
               variant="outline"
-              className="mt-1 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/30"
+              className="mt-1 border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-orange-700 dark:border-orange-800 dark:text-blue-400 dark:hover:bg-orange-950/30"
               onClick={() => setView({ type: "products" })}
             >
               Browse Products
@@ -75,7 +75,7 @@ export function WishlistSection() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             onClick={() => setView({ type: "products" })}
           >
             View All
@@ -96,7 +96,7 @@ export function WishlistSection() {
                 className="flex-shrink-0 w-[200px] cursor-pointer group"
                 onClick={() => handleNavigate(item.productId)}
               >
-                <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50 bg-muted mb-2 transition-all duration-300 group-hover:shadow-md group-hover:border-orange-200">
+                <div className="relative aspect-square overflow-hidden rounded-lg border border-border/50 bg-muted mb-2 transition-all duration-300 group-hover:shadow-md group-hover:border-blue-200">
                   <Image
                     src={item.image}
                     alt={item.name}
@@ -117,7 +117,7 @@ export function WishlistSection() {
                     </Button>
                   </div>
                 </div>
-                <h4 className="text-sm font-medium line-clamp-1 group-hover:text-orange-600 transition-colors">
+                <h4 className="text-sm font-medium line-clamp-1 group-hover:text-blue-700 transition-colors">
                   {item.name}
                 </h4>
                 <div className="flex items-center gap-2 mt-0.5">

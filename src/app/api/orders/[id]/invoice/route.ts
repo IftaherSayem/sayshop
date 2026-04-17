@@ -36,12 +36,18 @@ export async function GET(
 
     const supabase = await createSupabaseServerClient()
 
-    // Fetch order with order_items
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('id', id)
-      .single()
+    // Support lookup by human-readable order number (SS-XXXXXXXX)
+    let query = supabase.from('orders').select('*, order_items(*)')
+    
+    if (id.startsWith('SS-')) {
+      const shortId = id.slice(3).toLowerCase()
+      // Human order number is the first 8 chars of the ID
+      query = query.filter('id::text', 'ilike', `${shortId}%`)
+    } else {
+      query = query.eq('id', id)
+    }
+
+    const { data: order, error } = await query.maybeSingle()
 
     if (error || !order) {
       return NextResponse.json(
@@ -354,8 +360,10 @@ export async function GET(
     ].filter(Boolean)
 
     for (const part of addressParts) {
-      doc.text(part, rightColX, rightY)
-      rightY += 4.5
+      if (part) {
+        doc.text(part, rightColX, rightY)
+        rightY += 4.5
+      }
     }
 
     y = Math.max(y, rightY) + 6
@@ -437,10 +445,25 @@ export async function GET(
     doc.setLineWidth(0.3)
     doc.line(margin, y, pageWidth - margin, y)
 
+    // Parse details from notes (like coupons)
+    let couponCodeRow = ''
+    let couponDiscountAmount = 0
+    let cleanNotes = (order.notes as string) || ''
+
+    if (cleanNotes.includes('[COUPON:')) {
+      const match = cleanNotes.match(/\[COUPON:([^,]+),DISCOUNT:([^\]]+)\]/)
+      if (match) {
+        couponCodeRow = match[1]
+        couponDiscountAmount = parseFloat(match[2]) || 0
+        cleanNotes = cleanNotes.replace(/\[COUPON:[^\]]+\]/, '').replace(/ \| $/, '').trim()
+        if (cleanNotes.startsWith('| ')) cleanNotes = cleanNotes.slice(2)
+      }
+    }
+
     // Totals — use total_amount for final total
     y += 10
     const totalsX = margin + contentWidth - 5
-    const labelsX = margin + contentWidth - 75
+    const labelsX = margin + contentWidth - 85
 
     setTextColor(GRAY_TEXT)
     doc.setFontSize(9)
@@ -451,6 +474,18 @@ export async function GET(
       align: 'right',
     })
     y += 7
+
+    if (couponDiscountAmount > 0) {
+      setTextColor(ORANGE)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`Discount (${couponCodeRow}):`, labelsX, y)
+      doc.text(`-${formatPriceValue(couponDiscountAmount)}`, totalsX, y, {
+        align: 'right',
+      })
+      y += 7
+      setTextColor(GRAY_TEXT)
+      doc.setFont('helvetica', 'normal')
+    }
 
     doc.text('Shipping:', labelsX, y)
     if (Number(order.shipping) === 0) {
@@ -476,9 +511,9 @@ export async function GET(
     doc.setLineWidth(0.5)
     doc.line(labelsX, y - 1, totalsX, y - 1)
 
-    y += 4
+    y += 5
     setTextColor(DARK_TEXT)
-    doc.setFontSize(12)
+    doc.setFontSize(13)
     doc.setFont('helvetica', 'bold')
     doc.text('Total:', labelsX, y)
     setTextColor(ORANGE)
@@ -487,7 +522,7 @@ export async function GET(
     })
 
     // Payment Method
-    y += 14
+    y += 15
     setDrawColor(BORDER_COLOR)
     doc.setLineWidth(0.3)
     doc.line(margin, y, pageWidth - margin, y)
@@ -504,12 +539,12 @@ export async function GET(
     doc.setFont('helvetica', 'normal')
     doc.text(formatPaymentMethod(paymentMethod), margin, y)
 
-    if (order.notes) {
-      y += 8
+    if (cleanNotes && cleanNotes !== 'null') {
+      y += 9
       setTextColor(GRAY_TEXT)
       doc.setFontSize(8)
       doc.setFont('helvetica', 'bold')
-      doc.text('NOTES', margin, y)
+      doc.text('ORDER NOTES', margin, y)
 
       y += 5
       setTextColor(DARK_TEXT)
@@ -517,7 +552,7 @@ export async function GET(
       doc.setFont('helvetica', 'normal')
 
       const notesLines = doc.splitTextToSize(
-        order.notes as string,
+        cleanNotes,
         contentWidth
       )
       for (const line of notesLines) {

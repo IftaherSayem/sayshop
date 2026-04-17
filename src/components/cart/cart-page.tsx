@@ -9,12 +9,12 @@ import { formatPrice } from "@/lib/types"
 import type { Product } from "@/lib/types"
 import { useStockRefresh } from "@/hooks/use-stock-refresh"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,9 +30,6 @@ import {
   ShoppingBag,
   ArrowRight,
   ChevronRight,
-  Tag,
-  Loader2,
-  X,
   ShieldCheck,
   CircleDollarSign,
   RotateCcw,
@@ -45,22 +42,10 @@ import {
   AlertTriangle,
   RefreshCw,
   PackageX,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useRewardsStore } from "@/stores/rewards-store"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-
-interface CouponData {
-  valid: boolean
-  code: string
-  discount: number
-  minOrder?: number
-  message: string
-}
 
 export function CartPage() {
   const items = useCartStore((s) => s.items)
@@ -94,10 +79,6 @@ export function CartPage() {
 
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [savedExpanded, setSavedExpanded] = useState(false)
-  const [couponCode, setCouponCode] = useState("")
-  const [couponData, setCouponData] = useState<CouponData | null>(null)
-  const [couponLoading, setCouponLoading] = useState(false)
-  const [couponError, setCouponError] = useState("")
 
   // Cross-sell state
   const [crossSellProducts, setCrossSellProducts] = useState<Product[]>([])
@@ -145,15 +126,8 @@ export function CartPage() {
   const shipping = getShipping()
   const freeShipping = subtotal > 50
 
-  // Calculate discount
-  const discount = useMemo(() => {
-    if (!couponData || !couponData.valid) return 0
-    const discountAmount = subtotal * (couponData.discount / 100)
-    return discountAmount
-  }, [couponData, subtotal])
-
-  const tax = (subtotal - discount) * 0.08
-  const total = subtotal - discount + shipping + tax
+  const tax = subtotal * 0.08
+  const total = subtotal + shipping + tax
 
   // Select/deselect logic
   const allSelected = items.length > 0 && selectedItems.size === items.length
@@ -185,45 +159,6 @@ export function CartPage() {
     toast.success(`${selectedCount} item${selectedCount > 1 ? 's' : ''} removed from cart.`)
   }
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return
-
-    setCouponLoading(true)
-    setCouponError("")
-
-    try {
-      const res = await fetch("/api/coupons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode.trim() }),
-      })
-      const data = await res.json()
-
-      if (data.valid) {
-        if (data.minOrder && subtotal < data.minOrder) {
-          setCouponError(`Minimum order of ${formatPrice(data.minOrder)} required.`)
-          setCouponData(null)
-        } else {
-          setCouponData(data)
-          toast.success("Coupon applied!", { description: data.message })
-        }
-      } else {
-        setCouponError(data.error || "Invalid coupon code")
-        setCouponData(null)
-      }
-    } catch {
-      setCouponError("Failed to apply coupon")
-      setCouponData(null)
-    } finally {
-      setCouponLoading(false)
-    }
-  }
-
-  const handleRemoveCoupon = () => {
-    setCouponData(null)
-    setCouponCode("")
-    setCouponError("")
-  }
 
   const handleContinueShopping = () => {
     setView({ type: "products" })
@@ -278,13 +213,13 @@ export function CartPage() {
       image: imageUrl,
       stock: product.stock,
     })
-    sonnerToast.success(`${product.name} added to cart`)
+    toast.success(`${product.name} added to cart`)
   }
 
   return (
     <main className="min-h-screen bg-background">
       {/* Gradient Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
@@ -295,7 +230,7 @@ export function CartPage() {
                 Shopping Cart
               </h1>
               {totalItems > 0 && (
-                <p className="mt-0.5 text-sm text-orange-100">
+                <p className="mt-0.5 text-sm text-blue-100">
                   {totalItems} {totalItems === 1 ? 'item' : 'items'} in your cart
                 </p>
               )}
@@ -343,11 +278,11 @@ export function CartPage() {
             className="flex flex-col items-center justify-center gap-5 rounded-2xl border border-dashed py-24 text-center"
           >
             <div className="relative">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30">
-                <ShoppingBag className="h-16 w-16 text-orange-400/70" />
+              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-orange-950/50 dark:to-orange-900/30">
+                <ShoppingBag className="h-16 w-16 text-blue-400/70" />
               </div>
-              <div className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/50">
-                <ArrowRight className="h-5 w-5 text-orange-500 rotate-[-45deg]" />
+              <div className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-orange-900/50">
+                <ArrowRight className="h-5 w-5 text-blue-600 rotate-[-45deg]" />
               </div>
             </div>
             <div>
@@ -356,7 +291,7 @@ export function CartPage() {
                 Looks like you haven&apos;t added anything to your cart yet. Explore our products and find something you love!
               </p>
             </div>
-            <Button onClick={handleStartShopping} className="mt-2 bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200 shadow-md shadow-orange-500/20">
+            <Button onClick={handleStartShopping} className="mt-2 bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-md shadow-blue-600/20">
               Start Shopping
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -456,7 +391,7 @@ export function CartPage() {
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <button
                             onClick={() => setView({ type: "product-detail", productId: item.productId })}
-                            className="truncate text-left text-sm font-medium transition-colors hover:text-orange-500 sm:text-base"
+                            className="truncate text-left text-sm font-medium transition-colors hover:text-blue-600 sm:text-base"
                           >
                             {item.name}
                           </button>
@@ -525,9 +460,9 @@ export function CartPage() {
                               <button
                                 onClick={() => {
                                   saveForLater(item.productId)
-                                  sonnerToast.success(`${item.name} saved for later`)
+                                  toast.success(`${item.name} saved for later`)
                                 }}
-                                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-500"
+                                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-blue-50 hover:text-blue-600"
                                 aria-label={`Save ${item.name} for later`}
                               >
                                 <BookMarked className="h-4 w-4" />
@@ -568,9 +503,9 @@ export function CartPage() {
                           <button
                             onClick={() => {
                               saveForLater(item.productId)
-                              sonnerToast.success(`${item.name} saved for later`)
-                            }}
-                            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-500"
+                                toast.success(`${item.name} saved for later`)
+                              }}
+                            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-blue-50 hover:text-blue-600"
                             aria-label={`Save ${item.name} for later`}
                             title="Save for Later"
                           >
@@ -602,7 +537,7 @@ export function CartPage() {
               <div className="mt-6">
                 <button
                   onClick={handleContinueShopping}
-                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-orange-500"
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-blue-600"
                 >
                   <ChevronRight className="h-4 w-4 rotate-180" />
                   Continue Shopping
@@ -615,7 +550,7 @@ export function CartPage() {
                   <CollapsibleTrigger asChild>
                     <button className="flex w-full items-center justify-between rounded-xl border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50">
                       <div className="flex items-center gap-2">
-                        <BookMarked className="h-5 w-5 text-orange-500" />
+                        <BookMarked className="h-5 w-5 text-blue-600" />
                         <span className="text-sm font-semibold">
                           Saved for Later ({savedForLater.length} {savedForLater.length === 1 ? 'item' : 'items'})
                         </span>
@@ -662,11 +597,11 @@ export function CartPage() {
                                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                                   <button
                                     onClick={() => setView({ type: "product-detail", productId: item.productId })}
-                                    className="truncate text-left text-sm font-medium transition-colors hover:text-orange-500"
+                                    className="truncate text-left text-sm font-medium transition-colors hover:text-blue-600"
                                   >
                                     {item.name}
                                   </button>
-                                  <span className="text-sm font-semibold text-orange-500">
+                                  <span className="text-sm font-semibold text-blue-600">
                                     {formatPrice(item.price)}
                                   </span>
                                 </div>
@@ -677,7 +612,7 @@ export function CartPage() {
                                     className="h-8 text-xs"
                                     onClick={() => {
                                       moveToCart(item.productId)
-                                      sonnerToast.success(`${item.name} moved to cart`)
+                                      toast.success(`${item.name} moved to cart`)
                                     }}
                                   >
                                     Move to Cart
@@ -706,7 +641,7 @@ export function CartPage() {
               <div className="sticky top-20 sm:top-24">
                 <Card className="overflow-hidden border-0 shadow-lg">
                   {/* Orange gradient border-left accent */}
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600" />
+                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-400 via-blue-600 to-blue-700" />
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Order Summary</CardTitle>
                   </CardHeader>
@@ -728,7 +663,7 @@ export function CartPage() {
                       <button
                         className="mt-1.5 text-xs text-amber-600 underline-offset-2 hover:underline dark:text-amber-400"
                         onClick={() => {
-                          sonnerToast.info(
+                            toast.info(
                             'Earn 1 point per $1 spent. Points can be redeemed for discounts on future orders!',
                             { duration: 5000 }
                           )
@@ -767,93 +702,6 @@ export function CartPage() {
                       <span className="font-medium">{formatPrice(tax)}</span>
                     </div>
 
-                    {/* Coupon */}
-                    <Separator />
-                    <div>
-                      {couponData ? (
-                        <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-900 dark:bg-green-950">
-                          <div className="flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-green-600" />
-                            <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                              {couponData.code} (-{couponData.discount}%)
-                            </span>
-                          </div>
-                          <button
-                            onClick={handleRemoveCoupon}
-                            className="text-muted-foreground transition-colors hover:text-destructive"
-                            aria-label="Remove coupon"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Coupon Code</label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Enter code"
-                              value={couponCode}
-                              onChange={(e) => {
-                                setCouponCode(e.target.value)
-                                setCouponError("")
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleApplyCoupon()
-                              }}
-                              className="h-9 flex-1"
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleApplyCoupon}
-                              disabled={couponLoading || !couponCode.trim()}
-                              className="h-9 px-3"
-                            >
-                              {couponLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Apply"
-                              )}
-                            </Button>
-                          </div>
-                          {couponError && (
-                            <p className="text-xs text-destructive">{couponError}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Animated Savings Badge */}
-                    {discount > 0 && (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 dark:bg-green-950/50"
-                      >
-                        <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                          🎉 You save!
-                        </span>
-                        <motion.span
-                          initial={{ scale: 0.5 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.1 }}
-                          className="text-sm font-bold text-green-700 dark:text-green-400"
-                        >
-                          -{formatPrice(discount)}
-                        </motion.span>
-                      </motion.div>
-                    )}
-
-                    {/* Discount */}
-                    {discount > 0 && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-green-600">Discount</span>
-                        <span className="font-medium text-green-600">
-                          -{formatPrice(discount)}
-                        </span>
-                      </div>
-                    )}
 
                     <Separator />
 
@@ -865,13 +713,13 @@ export function CartPage() {
 
                     {/* Estimated Delivery */}
                     <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2.5 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4 shrink-0 text-orange-500" />
+                      <Clock className="h-4 w-4 shrink-0 text-blue-600" />
                       <span>Estimated delivery: <span className="font-medium text-foreground">3-5 business days</span></span>
                     </div>
 
                     {/* Checkout Button */}
                     <Button
-                      className="w-full bg-orange-500 text-white hover:bg-orange-600"
+                      className="w-full bg-blue-600 text-white hover:bg-blue-700"
                       size="lg"
                       onClick={handleCheckout}
                     >
@@ -890,7 +738,7 @@ export function CartPage() {
                         <span className="text-[10px] leading-tight font-medium text-muted-foreground">Money-Back Guarantee</span>
                       </div>
                       <div className="flex flex-col items-center gap-1.5 rounded-lg border bg-muted/30 px-2 py-3 text-center">
-                        <RotateCcw className="h-5 w-5 text-orange-500" />
+                        <RotateCcw className="h-5 w-5 text-blue-600" />
                         <span className="text-[10px] leading-tight font-medium text-muted-foreground">Free Returns</span>
                       </div>
                     </div>
@@ -905,7 +753,7 @@ export function CartPage() {
         {items.length > 0 && crossSellLoading && (
           <div className="mt-12">
             <div className="mb-6 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+              <Sparkles className="h-5 w-5 text-blue-600" />
               <h2 className="text-xl font-bold">You May Also Like</h2>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4">
@@ -934,7 +782,7 @@ export function CartPage() {
             transition={{ duration: 0.4 }}
           >
             <div className="mb-6 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+              <Sparkles className="h-5 w-5 text-blue-600" />
               <h2 className="text-xl font-bold">You May Also Like</h2>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
@@ -962,16 +810,16 @@ export function CartPage() {
                       </div>
                       <CardContent className="p-3 space-y-2">
                         <p
-                          className="truncate text-sm font-medium transition-colors hover:text-orange-500"
+                          className="truncate text-sm font-medium transition-colors hover:text-blue-600"
                           onClick={() => setView({ type: "product-detail", productId: product.id })}
                         >
                           {product.name}
                         </p>
-                        <p className="text-sm font-bold text-orange-500">
+                        <p className="text-sm font-bold text-blue-600">
                           {formatPrice(product.price)}
                         </p>
                         <Button
-                          className="w-full bg-orange-500 text-white hover:bg-orange-600 h-8 text-xs"
+                          className="w-full bg-blue-600 text-white hover:bg-blue-700 h-8 text-xs"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleCrossSellAddToCart(product)

@@ -112,7 +112,7 @@ function DealProductCard({ product }: DealProductCardProps) {
         <div className="absolute bottom-0 left-0 right-0 p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0">
           <Button
             size="sm"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4 mr-1" />
@@ -121,7 +121,7 @@ function DealProductCard({ product }: DealProductCardProps) {
         </div>
       </div>
       <CardContent className="p-3">
-        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-orange-600 transition-colors">
+        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors">
           {product.name}
         </h3>
         <div className="flex items-center gap-1 mb-2">
@@ -132,7 +132,7 @@ function DealProductCard({ product }: DealProductCardProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-lg text-orange-600">
+          <span className="font-bold text-lg text-blue-700">
             {formatPrice(product.price)}
           </span>
           {product.comparePrice && (
@@ -146,7 +146,7 @@ function DealProductCard({ product }: DealProductCardProps) {
   );
 }
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -154,7 +154,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
@@ -194,7 +194,7 @@ export function DealsSection() {
   }, [realtimeTick]);
 
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-b from-orange-50/50 to-transparent dark:from-orange-950/20 dark:to-transparent">
+    <section className="py-12 md:py-16 bg-gradient-to-b from-blue-50/50 to-transparent dark:from-orange-950/20 dark:to-transparent">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -211,7 +211,7 @@ export function DealsSection() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
         >
           <div>
-            <div className="h-0.5 max-w-24 mx-auto sm:mx-0 mb-4 rounded-full bg-gradient-to-r from-orange-400 to-orange-600" />
+            <div className="h-0.5 max-w-24 mx-auto sm:mx-0 mb-4 rounded-full bg-gradient-to-r from-blue-400 to-blue-700" />
             <h2 className="text-2xl md:text-3xl font-bold">Today&apos;s Deals</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Hurry up! These deals won&apos;t last
@@ -267,7 +267,7 @@ export function DealsSection() {
             <Button
               variant="outline"
               size="lg"
-              className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white transition-all duration-300"
+              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
               onClick={() => setView({ type: "products", sort: "popular" })}
             >
               View All Deals

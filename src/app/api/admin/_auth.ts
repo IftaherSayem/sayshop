@@ -10,8 +10,21 @@ export async function verifyAdmin(request: NextRequest) {
       return { error: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }), user: null }
     }
     const sessionUser = await validateSession(token)
-    if (!sessionUser || sessionUser.roleName !== 'admin') {
-      return { error: NextResponse.json({ error: 'Access denied. Admin only.' }, { status: 403 }), user: null }
+    if (!sessionUser) {
+      return { error: NextResponse.json({ error: 'Session invalid' }, { status: 401 }), user: null }
+    }
+
+    const role = sessionUser.roleName.toLowerCase()
+    const email = (sessionUser.email || '').toLowerCase()
+    const allowedRoles = ['admin', 'manager', 'support']
+    
+    // Explicitly allow master admin email
+    if (email === 'admin@sayshop.com') {
+      return { error: null, user: sessionUser }
+    }
+
+    if (!allowedRoles.includes(role)) {
+      return { error: NextResponse.json({ error: 'Access denied. Privileged access only.' }, { status: 403 }), user: null }
     }
     return { error: null, user: sessionUser }
   } catch {

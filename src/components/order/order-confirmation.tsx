@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, type Variants } from "framer-motion"
 import { useUIStore } from "@/stores/ui-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import {
   PartyPopper,
   MapPin,
   ChevronRight,
+  Tag,
 } from "lucide-react"
 import confetti from "canvas-confetti"
 import { toast } from "sonner"
@@ -46,7 +47,7 @@ interface OrderData {
 }
 
 // ── Animation Variants ─────────────────────────────────────────
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -54,7 +55,7 @@ const containerVariants = {
   },
 }
 
-const fadeUpVariants = {
+const fadeUpVariants: Variants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
@@ -63,7 +64,7 @@ const fadeUpVariants = {
   },
 }
 
-const scaleVariants = {
+const scaleVariants: Variants = {
   hidden: { scale: 0, opacity: 0 },
   visible: {
     scale: 1,
@@ -72,7 +73,7 @@ const scaleVariants = {
   },
 }
 
-const checkPathVariants = {
+const checkPathVariants: Variants = {
   hidden: { pathLength: 0, opacity: 0 },
   visible: {
     pathLength: 1,
@@ -81,7 +82,7 @@ const checkPathVariants = {
   },
 }
 
-const ringVariants = {
+const ringVariants: Variants = {
   hidden: { scale: 0.8, opacity: 0.6 },
   visible: {
     scale: 1.8,
@@ -90,7 +91,7 @@ const ringVariants = {
   },
 }
 
-const ring2Variants = {
+const ring2Variants: Variants = {
   hidden: { scale: 0.8, opacity: 0.4 },
   visible: {
     scale: 2.2,
@@ -99,7 +100,7 @@ const ring2Variants = {
   },
 }
 
-const stepVariants = {
+const stepVariants: Variants = {
   hidden: { opacity: 0, x: -20 },
   visible: (i: number) => ({
     opacity: 1,
@@ -108,7 +109,7 @@ const stepVariants = {
   }),
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, x: -10 },
   visible: (i: number) => ({
     opacity: 1,
@@ -298,9 +299,9 @@ export function OrderConfirmation({
       <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
-            <div className="h-16 w-16 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500" />
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Package className="h-6 w-6 text-orange-500" />
+              <Package className="h-6 w-6 text-blue-600" />
             </div>
           </div>
           <p className="text-sm font-medium text-muted-foreground">Processing your order...</p>
@@ -319,7 +320,7 @@ export function OrderConfirmation({
           </div>
           <h2 className="text-xl font-semibold">Order Not Found</h2>
           <p className="text-sm text-muted-foreground">We couldn't find this order. It may have been removed.</p>
-          <Button onClick={handleViewOrders} className="mt-2 bg-orange-500 text-white hover:bg-orange-600">
+          <Button onClick={handleViewOrders} className="mt-2 bg-blue-600 text-white hover:bg-blue-700">
             View My Orders
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -403,13 +404,13 @@ export function OrderConfirmation({
 
           {/* ── Order Number Badge ──────────────────────────────── */}
           <motion.div variants={fadeUpVariants} className="mb-6 w-full max-w-sm">
-            <div className="relative overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-5 text-center dark:from-orange-950/30 dark:to-amber-950/30 dark:border-orange-800/40">
-              <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-orange-200/30 dark:bg-orange-800/20" />
+            <div className="relative overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-amber-50 p-5 text-center dark:from-orange-950/30 dark:to-amber-950/30 dark:border-orange-800/40">
+              <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-blue-200/30 dark:bg-orange-800/20" />
               <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-amber-200/20 dark:bg-amber-800/10" />
-              <p className="relative text-xs font-semibold uppercase tracking-widest text-orange-600/80 dark:text-orange-400/80">
+              <p className="relative text-xs font-semibold uppercase tracking-widest text-blue-700/80 dark:text-blue-400/80">
                 Order Number
               </p>
-              <p className="relative mt-1 font-mono text-2xl font-bold tracking-wider text-orange-600 sm:text-3xl">
+              <p className="relative mt-1 font-mono text-2xl font-bold tracking-wider text-blue-700 sm:text-3xl">
                 {displayOrderNumber}
               </p>
             </div>
@@ -445,7 +446,7 @@ export function OrderConfirmation({
               <Card>
                 <CardContent className="p-4 sm:p-5">
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                    <Package className="h-4 w-4 text-orange-500" />
+                    <Package className="h-4 w-4 text-blue-600" />
                     Order Items ({orderItems.length})
                   </h3>
                   <div className="space-y-3">
@@ -491,7 +492,7 @@ export function OrderConfirmation({
             <Card>
               <CardContent className="p-4 sm:p-5">
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                  <CreditCard className="h-4 w-4 text-orange-500" />
+                  <CreditCard className="h-4 w-4 text-blue-600" />
                   Order Summary
                 </h3>
                 <div className="space-y-2.5 text-sm">
@@ -509,10 +510,19 @@ export function OrderConfirmation({
                     <span className="text-muted-foreground">Tax</span>
                     <span>{formatPrice(order.tax)}</span>
                   </div>
+                  {(order.subtotal + order.shipping + order.tax - order.total) > 0.01 && (
+                    <div className="flex items-center justify-between font-medium text-emerald-600">
+                      <span className="flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5" />
+                        Coupon Discount
+                      </span>
+                      <span>-{formatPrice(order.subtotal + order.shipping + order.tax - order.total)}</span>
+                    </div>
+                  )}
                   <Separator className="my-1" />
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="text-lg font-bold text-orange-600">{formatPrice(order.total)}</span>
+                    <span className="text-lg font-bold text-blue-700">{formatPrice(order.total)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -560,7 +570,7 @@ export function OrderConfirmation({
             <Card className="border-dashed">
               <CardContent className="p-4 sm:p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
-                  <PartyPopper className="h-4 w-4 text-orange-500" />
+                  <PartyPopper className="h-4 w-4 text-blue-600" />
                   What&apos;s Next?
                 </h3>
                 <div className="space-y-3">
@@ -589,8 +599,8 @@ export function OrderConfirmation({
                       animate="visible"
                       className="flex items-start gap-3"
                     >
-                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
-                        <step.icon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-orange-900/30">
+                        <step.icon className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
                       </div>
                       <div>
                         <p className="text-sm font-medium">{step.title}</p>
@@ -635,7 +645,7 @@ export function OrderConfirmation({
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
-              className="flex-1 bg-orange-500 text-white hover:bg-orange-600"
+              className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleContinueShopping}
             >
               Continue Shopping
@@ -656,4 +666,4 @@ export function OrderConfirmation({
     </main>
   )
 }
-s
+

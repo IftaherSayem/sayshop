@@ -1,4 +1,5 @@
-import { NextRequest, cookies } from "next/server";
+import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 
 const CSRF_COOKIE_NAME = "sayshop_csrf_hash";
 
@@ -12,7 +13,10 @@ async function hashToken(token: string): Promise<string> {
 }
 
 /**
- * Validate a CSRF token from the request body against the stored cookie.
+ * Validate a CSRF token sent via the `x-csrf-token` request header.
+ *
+ * This approach avoids consuming the request body (ReadableStream),
+ * so it is safe to call before `request.json()` in an API route handler.
  *
  * Usage in API route handlers:
  * ```typescript
@@ -21,17 +25,31 @@ async function hashToken(token: string): Promise<string> {
  * export async function POST(request: NextRequest) {
  *   const csrfError = await validateCSRF(request);
  *   if (csrfError) return csrfError;
- *   // ... proceed with the request
+ *   const body = await request.json(); // safe — body not consumed yet
+ *   // ...
  * }
+ * ```
+ *
+ * On the client side, include the CSRF token as a header:
+ * ```typescript
+ * fetch("/api/some-endpoint", {
+ *   method: "POST",
+ *   headers: {
+ *     "Content-Type": "application/json",
+ *     "x-csrf-token": csrfToken,
+ *   },
+ *   body: JSON.stringify(payload),
+ * });
  * ```
  */
 export async function validateCSRF(request: NextRequest): Promise<null | Response> {
   try {
-    const body = await request.json();
+    // Read token from header — does NOT consume the request body stream
+    const csrfToken = request.headers.get("x-csrf-token");
 
-    // Allow requests that don't have a body or no CSRF token (GET-like payloads)
-    if (!body || !body.csrfToken) {
-      return null; // No CSRF token provided — skip validation for backward compat
+    // If no CSRF token header is present, skip validation for backward compat
+    if (!csrfToken) {
+      return null;
     }
 
     const cookieStore = await cookies();
@@ -44,9 +62,9 @@ export async function validateCSRF(request: NextRequest): Promise<null | Respons
       );
     }
 
-    const providedHash = await hashToken(body.csrfToken);
+    const providedHash = await hashToken(csrfToken);
 
-    // Use timing-safe comparison (simple approach — adequate for this use case)
+    // Timing-safe string comparison
     if (providedHash !== storedHash) {
       return new Response(
         JSON.stringify({ error: "Invalid CSRF token. Please refresh the page and try again." }),
@@ -56,7 +74,7 @@ export async function validateCSRF(request: NextRequest): Promise<null | Respons
 
     return null; // Token is valid
   } catch {
-    // If JSON parsing fails, we can't validate CSRF — let the handler decide
+    // On unexpected error, allow the request through
     return null;
   }
 }

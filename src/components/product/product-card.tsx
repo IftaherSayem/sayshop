@@ -19,6 +19,8 @@ interface ProductCardProps {
   onQuickView?: (product: Product) => void;
 }
 
+import { memo } from "react";
+
 function isNewProduct(createdAt: string): boolean {
   try {
     const created = new Date(createdAt);
@@ -31,7 +33,7 @@ function isNewProduct(createdAt: string): boolean {
   }
 }
 
-export function ProductCard({ product, onQuickView }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, onQuickView }: ProductCardProps) {
   const images = parseImages(product.images);
   const discount = product.comparePrice ? getDiscountPercentage(product.price, product.comparePrice) : 0;
   const addItem = useCartStore((s) => s.addItem);
@@ -152,7 +154,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setView({ type: "product-detail", productId: product.id });
+    setView({ type: "product-detail", productId: product.id, productSlug: product.slug, categorySlug: product.category?.slug });
   };
 
   const handleNotifyMe = (e: React.MouseEvent) => {
@@ -172,7 +174,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       style={tiltStyle}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onClick={() => setView({ type: "product-detail", productId: product.id })}
+      onClick={() => setView({ type: "product-detail", productId: product.id, productSlug: product.slug, categorySlug: product.category?.slug })}
     >
       {/* Shine overlay for 3D tilt effect (desktop only) */}
       {!isTouchDevice && (
@@ -185,7 +187,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       {!isTouchDevice && (
         <div className="absolute inset-0 rounded-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
           <div className="absolute inset-0 rounded-lg p-[2px] overflow-hidden">
-            <div className="absolute inset-[-50%] bg-gradient-to-r from-transparent via-orange-400 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
+            <div className="absolute inset-[-50%] bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
           </div>
         </div>
       )}
@@ -268,7 +270,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full border-orange-500 text-orange-500 hover:bg-orange-50 hover:text-orange-600"
+                className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                 onClick={handleNotifyMe}
               >
                 <Bell className="h-4 w-4 mr-1" />
@@ -278,7 +280,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           ) : (
             <Button
               size="sm"
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -292,7 +294,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         <p className="text-xs text-muted-foreground mb-1 min-h-[1rem]">
           {product.brand || '\u00A0'}
         </p>
-        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-orange-600 transition-colors">
+        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors">
           {product.name}
         </h3>
         <div className="flex items-center gap-1 mb-1">
@@ -326,4 +328,4 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
       </CardContent>
     </Card>
   );
-}
+});

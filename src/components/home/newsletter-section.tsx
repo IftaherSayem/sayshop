@@ -92,7 +92,7 @@ export function NewsletterSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-12 md:px-12 md:py-16 text-center"
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-pink-500 px-6 py-12 md:px-12 md:py-16 text-center"
         >
           {/* Background decoration - floating animated shapes */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -270,11 +270,11 @@ export function NewsletterSection() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="h-11 rounded-lg px-6 transition-all duration-300 bg-gradient-to-r from-white to-white/90 text-orange-600 hover:from-white/95 hover:to-white/85 font-semibold shadow-lg hover:shadow-xl"
+                      className="h-11 rounded-lg px-6 transition-all duration-300 bg-gradient-to-r from-white to-white/90 text-blue-700 hover:from-white/95 hover:to-white/85 font-semibold shadow-lg hover:shadow-xl"
                     >
                       {loading ? (
                         <span className="flex items-center gap-2">
-                          <span className="h-4 w-4 border-2 border-orange-600/30 border-t-orange-600 rounded-full animate-spin" />
+                          <span className="h-4 w-4 border-2 border-blue-700/30 border-t-blue-700 rounded-full animate-spin" />
                           Subscribing...
                         </span>
                       ) : (

@@ -53,9 +53,9 @@ function BrandCard({ brand }: { brand: Brand }) {
     <motion.div
       variants={itemVariants}
       whileHover={{ scale: 1.05 }}
-      className="group bg-card border border-border/50 rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:shadow-lg hover:shadow-orange-500/5 hover:border-orange-200 transition-all duration-300 cursor-pointer"
+      className="group bg-card border border-border/50 rounded-xl p-6 flex flex-col items-center justify-center gap-3 hover:shadow-lg hover:shadow-blue-600/5 hover:border-blue-200 transition-all duration-300 cursor-pointer"
     >
-      <Icon className="h-10 w-10 text-muted-foreground/40 group-hover:text-orange-500 transition-colors duration-300" />
+      <Icon className="h-10 w-10 text-muted-foreground/40 group-hover:text-blue-600 transition-colors duration-300" />
       <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
         {brand.name}
       </span>

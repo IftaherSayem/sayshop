@@ -3,12 +3,29 @@
 import { useEffect, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useUIStore } from "@/stores/ui-store"
+import { useAuthStore } from "@/stores/auth-store"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { BackToTop } from "@/components/layout/back-to-top"
 import { CartDrawer } from "@/components/cart/cart-drawer"
-import { CartPage } from "@/components/cart/cart-page"
-import { CheckoutPage } from "@/components/checkout/checkout-page"
+import { useIsHydrated } from "@/hooks/use-is-hydrated"
+import dynamic from 'next/dynamic'
+
+const CartPage = dynamic(() => import("@/components/cart/cart-page").then(mod => mod.CartPage), { ssr: false })
+const CheckoutPage = dynamic(() => import("@/components/checkout/checkout-page").then(mod => mod.CheckoutPage), { ssr: false })
+const ProductListing = dynamic(() => import("@/components/product/product-listing").then(mod => mod.ProductListing), { ssr: false })
+const ProductDetail = dynamic(() => import("@/components/product/product-detail").then(mod => mod.ProductDetail), { ssr: false })
+const OrderList = dynamic(() => import("@/components/order/order-list").then(mod => mod.OrderList), { ssr: false })
+const OrderDetail = dynamic(() => import("@/components/order/order-detail").then(mod => mod.OrderDetail), { ssr: false })
+const OrderConfirmation = dynamic(() => import("@/components/order/order-confirmation").then(mod => mod.OrderConfirmation), { ssr: false })
+const WishlistPage = dynamic(() => import("@/components/product/wishlist-page").then(mod => mod.WishlistPage), { ssr: false })
+const ComparePage = dynamic(() => import("@/components/product/compare-page").then(mod => mod.ComparePage), { ssr: false })
+const ProfilePage = dynamic(() => import("@/components/user/profile-page").then(mod => mod.ProfilePage), { ssr: false })
+const AuthPage = dynamic(() => import("@/components/auth/auth-page").then(mod => mod.AuthPage), { ssr: false })
+const AdminPanel = dynamic(() => import("@/components/admin/admin-panel").then(mod => mod.AdminPanel), { ssr: false })
+const ChatWidget = dynamic(() => import("@/components/chat/chat-widget").then(mod => mod.ChatWidget), { ssr: false })
+const OrderTracking = dynamic(() => import("@/components/order/order-tracking").then(mod => mod.OrderTracking), { ssr: false })
+
 import { HeroBanner } from "@/components/home/hero-banner"
 import { PromoTicker } from "@/components/home/promo-ticker"
 import { CategoryGrid } from "@/components/home/category-grid"
@@ -20,16 +37,8 @@ import { BrandsSection } from "@/components/home/brands-section"
 import { TestimonialsSection } from "@/components/home/testimonials-section"
 import { WishlistSection } from "@/components/home/wishlist-section"
 import { NewsletterSection } from "@/components/home/newsletter-section"
-import { ProductListing } from "@/components/product/product-listing"
-import { ProductDetail } from "@/components/product/product-detail"
-import { OrderList } from "@/components/order/order-list"
-import { OrderDetail } from "@/components/order/order-detail"
-import { OrderConfirmation } from "@/components/order/order-confirmation"
-import { WishlistPage } from "@/components/product/wishlist-page"
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav"
-import { ComparePage } from "@/components/product/compare-page"
 import { CompareFloatingBar } from "@/components/product/compare-floating-bar"
-import { ChatWidget } from "@/components/chat/chat-widget"
 import { LoadingScreen } from "@/components/layout/loading-screen"
 import { ScrollProgress } from "@/components/layout/scroll-progress"
 import { AnnouncementBanner } from "@/components/home/announcement-banner"
@@ -38,15 +47,13 @@ import { RecommendationsSection } from "@/components/home/recommendations-sectio
 import { ReviewsShowcase } from "@/components/home/reviews-showcase"
 import { ComboDealsSection } from "@/components/home/combo-deals-section"
 import { SeasonalBanner } from "@/components/home/seasonal-banner"
-import { OrderTracking } from "@/components/order/order-tracking"
-import { ProfilePage } from "@/components/user/profile-page"
-import { AuthPage } from "@/components/auth/auth-page"
-import { AdminPanel } from "@/components/admin/admin-panel"
 import { Toaster } from "@/components/ui/sonner"
 
 function ScrollToTop({ viewKey }: { viewKey: string }) {
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Standard practice for page transitions: jump to top instantly
+    // so the new page entrance animation happens at the correct scroll position.
+    window.scrollTo({ top: 0, behavior: 'auto' })
   }, [viewKey])
   return null
 }
@@ -89,6 +96,7 @@ function HomePage() {
 export default function Home() {
   const currentView = useUIStore((state) => state.currentView)
   const initUrlSync = useUIStore((state) => state.initUrlSync)
+  const isHydrated = useIsHydrated()
   const urlSyncInitialized = useRef(false)
   const authRestored = useRef(false)
 
@@ -99,6 +107,40 @@ export default function Home() {
       initUrlSync()
     }
   }, [initUrlSync])
+
+  const { user, logout } = useAuthStore()
+
+  // Dynamic Browser Tab Title & URL Auto-correct
+  useEffect(() => {
+    let title = "Say Shop - Your Premier Online Shopping Destination"
+    
+    if (currentView.type === "admin") {
+      const isManager = user?.role?.toUpperCase() === 'MANAGER'
+      title = (isManager ? "Control Panel" : "Admin Panel") + " | Say Shop"
+      
+      // Auto-correct URL if a manager is on /admin or an admin is on /manager
+      const expectedUrl = isManager ? "/manager" : "/admin"
+      if (typeof window !== "undefined" && window.location.pathname !== expectedUrl) {
+        window.history.replaceState({ view: currentView }, "", expectedUrl)
+      }
+    } else if (currentView.type === "profile") {
+      title = "My Account | Say Shop"
+    } else if (currentView.type === "cart") {
+      title = "Shopping Cart | Say Shop"
+    } else if (currentView.type === "products") {
+      title = (currentView.search ? `Search: ${currentView.search}` : "Products") + " | Say Shop"
+    } else if (currentView.type === "checkout") {
+      title = "Checkout | Say Shop"
+    } else if (currentView.type === "orders") {
+      title = "My Orders | Say Shop"
+    } else if (currentView.type === "wishlist") {
+      title = "Wishlist | Say Shop"
+    } else if (currentView.type === "auth") {
+      title = "Sign In | Say Shop"
+    }
+    
+    document.title = title
+  }, [currentView, user?.role])
 
   // Restore auth session on mount by verifying with server
   useEffect(() => {
@@ -111,17 +153,16 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json()
           if (data.user) {
-            const { setUser } = await import("@/stores/auth-store")
-            setUser({
+            const isMasterAdmin = data.user.email?.toLowerCase() === 'admin@sayshop.com'
+            useAuthStore.getState().setUser({
               id: data.user.id,
               email: data.user.email,
               name: data.user.name,
-              role: data.user.role,
+              role: isMasterAdmin ? 'ADMIN' : data.user.role,
             })
           }
         } else {
           // Session invalid, clear auth state
-          const { useAuthStore } = await import("@/stores/auth-store")
           useAuthStore.getState().logout()
         }
       } catch {
@@ -130,6 +171,11 @@ export default function Home() {
     }
     restoreAuth()
   }, [])
+
+  // Pre-hydration placeholder to avoid flicker
+  if (!isHydrated) {
+    return <LoadingScreen />
+  }
 
   const viewKey = `${currentView.type}-${'productId' in currentView ? currentView.productId : ''}${'productSlug' in currentView ? currentView.productSlug : ''}${'orderId' in currentView ? currentView.orderId : ''}${'search' in currentView ? currentView.search : ''}${'categoryId' in currentView ? currentView.categoryId : ''}${'categorySlug' in currentView ? currentView.categorySlug : ''}${'minPrice' in currentView ? currentView.minPrice : ''}${'maxPrice' in currentView ? currentView.maxPrice : ''}`
 
@@ -140,22 +186,13 @@ export default function Home() {
     <>
       <LoadingScreen />
       <ScrollProgress />
-      <AnnouncementBanner />
       <div className="flex min-h-screen flex-col pb-20 md:pb-0">
       <Header />
       <CartDrawer />
       <Toaster
         richColors
+        closeButton
         position="top-right"
-        toastOptions={{
-          classNames: {
-            toast: 'shadow-lg border-border/50',
-            success: 'border-green-200 dark:border-green-800/50',
-            error: 'border-red-200 dark:border-red-800/50',
-            warning: 'border-amber-200 dark:border-amber-800/50',
-            info: 'border-blue-200 dark:border-blue-800/50',
-          },
-        }}
       />
       <BackToTop />
       <OrderTracking />
@@ -163,71 +200,51 @@ export default function Home() {
       <ScrollToTop viewKey={viewKey} />
 
       <AnimatePresence mode="wait">
-        {isFullPageView ? (
-          <PageTransition key={`full-${viewKey}`} viewKey={viewKey}>
+        <PageTransition key={viewKey} viewKey={viewKey}>
+          <main className={isFullPageView ? "w-full" : "flex-1"}>
+            {currentView.type === "home" && <HomePage />}
+            {currentView.type === "products" && (
+              <ProductListing
+                key={`pl-${"categoryId" in currentView ? currentView.categoryId || "all" : "all"}-${"search" in currentView ? currentView.search || "" : ""}`}
+                categoryId={"categoryId" in currentView ? currentView.categoryId : undefined}
+                categorySlug={"categorySlug" in currentView ? currentView.categorySlug : undefined}
+                search={"search" in currentView ? currentView.search : undefined}
+                sort={"sort" in currentView ? currentView.sort : undefined}
+                minPrice={"minPrice" in currentView ? currentView.minPrice : undefined}
+                maxPrice={"maxPrice" in currentView ? currentView.maxPrice : undefined}
+              />
+            )}
+            {currentView.type === "product-detail" && (
+              <ProductDetail
+                productId={currentView.productId}
+                productSlug={"productSlug" in currentView ? currentView.productSlug : undefined}
+              />
+            )}
             {currentView.type === "cart" && <CartPage />}
             {currentView.type === "checkout" && <CheckoutPage />}
             {currentView.type === "admin" && <AdminPanel />}
+            {currentView.type === "orders" && <OrderList />}
+            {currentView.type === "order-detail" && (
+              <OrderDetail orderId={currentView.orderId} />
+            )}
             {currentView.type === "order-confirmation" && (
               <OrderConfirmation
-                orderNumber={
-                  "orderNumber" in currentView ? currentView.orderNumber : ""
-                }
-                orderId={
-                  "orderId" in currentView ? currentView.orderId : ""
-                }
+                orderNumber={"orderNumber" in currentView ? currentView.orderNumber : ""}
+                orderId={"orderId" in currentView ? currentView.orderId : ""}
               />
             )}
-          </PageTransition>
-        ) : (
-          <PageTransition key={`main-${viewKey}`} viewKey={viewKey}>
-            <main className="flex-1">
-              {currentView.type === "home" && <HomePage />}
-              {currentView.type === "products" && (
-                <ProductListing
-                  key={`pl-${"categoryId" in currentView ? currentView.categoryId || "all" : "all"}-${"search" in currentView ? currentView.search || "" : ""}`}
-                  categoryId={
-                    "categoryId" in currentView ? currentView.categoryId : undefined
-                  }
-                  categorySlug={
-                    "categorySlug" in currentView ? currentView.categorySlug : undefined
-                  }
-                  search={
-                    "search" in currentView ? currentView.search : undefined
-                  }
-                  sort={
-                    "sort" in currentView ? currentView.sort : undefined
-                  }
-                  minPrice={
-                    "minPrice" in currentView ? currentView.minPrice : undefined
-                  }
-                  maxPrice={
-                    "maxPrice" in currentView ? currentView.maxPrice : undefined
-                  }
-                />
-              )}
-              {currentView.type === "product-detail" && (
-                <ProductDetail
-                  productId={currentView.productId}
-                  productSlug={"productSlug" in currentView ? currentView.productSlug : undefined}
-                />
-              )}
-              {currentView.type === "orders" && <OrderList />}
-              {currentView.type === "order-detail" && (
-                <OrderDetail orderId={currentView.orderId} />
-              )}
-              {currentView.type === "wishlist" && <WishlistPage />}
-              {currentView.type === "compare" && <ComparePage />}
-              {currentView.type === "profile" && <ProfilePage />}
-              {currentView.type === "auth" && (
-                <AuthPage
-                  prefilledEmail={"prefilledEmail" in currentView ? currentView.prefilledEmail : undefined}
-                />
-              )}
-            </main>
-            <Footer />
-          </PageTransition>
-        )}
+            {currentView.type === "wishlist" && <WishlistPage />}
+            {currentView.type === "compare" && <ComparePage />}
+            {currentView.type === "profile" && <ProfilePage />}
+            {currentView.type === "auth" && (
+              <AuthPage
+                prefilledEmail={"prefilledEmail" in currentView ? currentView.prefilledEmail : undefined}
+                authMode={"authMode" in currentView ? currentView.authMode : undefined}
+              />
+            )}
+          </main>
+          {!isFullPageView && <Footer />}
+        </PageTransition>
       </AnimatePresence>
       <CompareFloatingBar />
       <MobileBottomNav />

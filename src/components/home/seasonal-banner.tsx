@@ -12,7 +12,7 @@ const floatingImages = [
   { src: "/images/products/smartwatch.png", alt: "Smartwatch", className: "w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40" },
 ];
 
-const floatingVariants = [
+const floatingVariants: any = [
   {
     initial: { y: 0, rotate: -6 },
     animate: { y: [-0, -12, 0], rotate: -6 },
@@ -35,7 +35,7 @@ export function SeasonalBanner() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 relative">
+      <div className="bg-gradient-to-r from-amber-500 via-blue-600 to-rose-500 relative">
         {/* Decorative circles */}
         <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2" />
         <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-white/5 rounded-full translate-y-1/2" />
@@ -64,7 +64,7 @@ export function SeasonalBanner() {
               <Button
                 size="lg"
                 onClick={() => setView({ type: "products", sort: "popular" })}
-                className="bg-white text-orange-600 hover:bg-white/90 font-semibold text-base px-8 h-12 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                className="bg-white text-blue-700 hover:bg-white/90 font-semibold text-base px-8 h-12 shadow-lg hover:shadow-xl transition-all duration-300 group"
               >
                 Shop Now
                 <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />

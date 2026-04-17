@@ -61,16 +61,16 @@ function StepCard({ step }: { step: Step }) {
 
   return (
     <motion.div variants={itemVariants} className="relative flex flex-col items-center">
-      <Card className="border-border/50 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300 h-full">
+      <Card className="border-border/50 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5 transition-all duration-300 h-full">
         <CardContent className="p-5 md:p-6 flex flex-col items-center text-center gap-3">
           {/* Step number badge */}
-          <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-orange-500 hover:bg-orange-500 text-white text-xs font-bold px-2.5 py-0.5 shadow-sm">
+          <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 hover:bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 shadow-sm">
             Step {step.number}
           </Badge>
 
           {/* Icon in colored circle */}
-          <div className="w-14 h-14 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center mt-1">
-            <Icon className="h-7 w-7 text-orange-500" />
+          <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-orange-950/40 flex items-center justify-center mt-1">
+            <Icon className="h-7 w-7 text-blue-600" />
           </div>
 
           {/* Title */}
@@ -126,8 +126,8 @@ export function HowItWorksSection() {
               {/* Dashed connector arrow between steps (not after last) */}
               {index < steps.length - 1 && (
                 <div className="absolute top-1/2 -right-4 -translate-y-1/2 z-10 flex items-center">
-                  <div className="w-6 border-t-2 border-dashed border-orange-300" />
-                  <ChevronRight className="h-4 w-4 text-orange-400 -ml-0.5" />
+                  <div className="w-6 border-t-2 border-dashed border-blue-300" />
+                  <ChevronRight className="h-4 w-4 text-blue-400 -ml-0.5" />
                 </div>
               )}
             </div>
@@ -143,7 +143,7 @@ export function HowItWorksSection() {
           className="md:hidden relative"
         >
           {/* Vertical dashed line */}
-          <div className="absolute left-7 top-10 bottom-10 w-px border-l-2 border-dashed border-orange-200 dark:border-orange-800" />
+          <div className="absolute left-7 top-10 bottom-10 w-px border-l-2 border-dashed border-blue-200 dark:border-orange-800" />
 
           <div className="flex flex-col gap-6">
             {steps.map((step) => {
@@ -155,14 +155,14 @@ export function HowItWorksSection() {
                   className="relative pl-14"
                 >
                   {/* Circle icon on the timeline */}
-                  <div className="absolute left-0 top-4 w-14 h-14 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center z-10 border-2 border-background">
-                    <Icon className="h-7 w-7 text-orange-500" />
+                  <div className="absolute left-0 top-4 w-14 h-14 rounded-full bg-blue-100 dark:bg-orange-950/40 flex items-center justify-center z-10 border-2 border-background">
+                    <Icon className="h-7 w-7 text-blue-600" />
                   </div>
 
-                  <Card className="border-border/50 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300">
+                  <Card className="border-border/50 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-600/5 transition-all duration-300">
                     <CardContent className="p-4 flex flex-col gap-1.5">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-orange-500 hover:bg-orange-500 text-white text-xs font-bold px-2 py-0.5">
+                        <Badge className="bg-blue-600 hover:bg-blue-600 text-white text-xs font-bold px-2 py-0.5">
                           Step {step.number}
                         </Badge>
                         <h3 className="font-bold text-sm">{step.title}</h3>

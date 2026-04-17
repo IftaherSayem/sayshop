@@ -36,13 +36,19 @@ export async function GET(
     }
 
     const supabase = await createSupabaseServerClient()
+    
+    // Support lookup by human-readable order number (SS-XXXXXXXX)
+    let query = supabase.from('orders').select('*, order_items(*)')
+    
+    if (id.startsWith('SS-')) {
+      const shortId = id.slice(3).toLowerCase()
+      // Filter by the start of the UUID since our order number is the first 8 chars of the ID
+      query = query.filter('id::text', 'ilike', `${shortId}%`)
+    } else {
+      query = query.eq('id', id)
+    }
 
-    // Fetch order with order_items
-    const { data: order, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('id', id)
-      .single()
+    const { data: order, error } = await query.maybeSingle()
 
     if (error || !order) {
       return NextResponse.json(

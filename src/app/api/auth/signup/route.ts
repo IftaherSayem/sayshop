@@ -114,6 +114,47 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', newUser.id)
 
+    // ── Dispatch Email via Resend ───────────────────────────
+    if (process.env.RESEND_API_KEY) {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      console.log(`[Resend] Dispatching signup verification to: ${email.toLowerCase()}`);
+      const { error: emailError } = await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: email.toLowerCase(),
+        subject: 'Welcome to SayShop - Verify Your Email',
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #2563EB; padding: 24px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
+            </div>
+            <div style="padding: 32px; text-align: center; background-color: #ffffff;">
+              <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">Welcome!</h2>
+              <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
+                Thanks for joining SayShop. To complete your registration, please enter the following secure 6-digit verification code.
+              </p>
+              <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1D4ED8; margin-bottom: 24px;">
+                ${verificationCode}
+              </div>
+              <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
+                If you did not sign up for this account, you can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        `
+      });
+
+      if (emailError) {
+        console.error('[signup] Send error detail:', JSON.stringify(emailError, null, 2));
+        // We allow the signup to proceed but the user will have to click "Resend" if this fails
+      } else {
+        console.log(`[Resend] Successfully dispatched signup email to ${email}`);
+      }
+    } else {
+      console.log(`[Development Leak] Signup OTP Code for ${email}: ${verificationCode}`);
+    }
+
     // ── Return user without session (verification required) ─
     return NextResponse.json(
       {
@@ -122,7 +163,6 @@ export async function POST(request: NextRequest) {
           email: newUser.email,
           name: name.trim(),
         },
-        verificationCode,
       },
       { status: 201 }
     )

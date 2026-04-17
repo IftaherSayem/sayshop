@@ -63,12 +63,12 @@ export function FeaturedProducts() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-orange-400 to-orange-600" />
+            <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-blue-400 to-blue-700" />
             <h2 className="text-2xl md:text-3xl font-bold">Featured Products</h2>
           </div>
           <button
             onClick={() => setView({ type: "products" })}
-            className="flex items-center gap-1 text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
           >
             View All
             <ArrowRight className="h-4 w-4" />

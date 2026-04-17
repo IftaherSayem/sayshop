@@ -11,7 +11,7 @@ import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCompareStore } from "@/stores/compare-store";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeRefetch } from "@/hooks/use-supabase-realtime";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -229,6 +229,46 @@ export function ProductListing({
     }));
   }, [propSort]);
 
+  // Sync active filters to browser URL (replaceState) to ensure correct slug/params
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams();
+    const activeCategoryId = filters.selectedCategories.length > 0 ? filters.selectedCategories[0] : undefined;
+    
+    let activeSlug: string | undefined = undefined;
+    if (activeCategoryId && categories.length > 0) {
+      const cat = categories.find((c) => c.id === activeCategoryId);
+      if (cat) activeSlug = cat.slug;
+    }
+
+    if (activeSlug) {
+      params.set("category", activeSlug);
+    } else if (activeCategoryId) {
+      params.set("categoryId", activeCategoryId);
+    }
+    
+    if (filters.search) params.set("search", filters.search);
+    if (filters.sort !== "newest") params.set("sort", filters.sort);
+    if (filters.priceMin > 0) params.set("minPrice", String(filters.priceMin));
+    if (filters.priceMax < PRICE_SLIDER_MAX) params.set("maxPrice", String(filters.priceMax));
+
+    const qs = params.toString();
+    const newUrl = `/products${qs ? `?${qs}` : ""}`;
+    
+    if (window.location.pathname + window.location.search !== newUrl) {
+      const viewState = { 
+        type: "products", 
+        categoryId: activeCategoryId, 
+        search: filters.search || undefined,
+        sort: filters.sort !== "newest" ? filters.sort : undefined,
+        minPrice: filters.priceMin > 0 ? filters.priceMin : undefined,
+        maxPrice: filters.priceMax < PRICE_SLIDER_MAX ? filters.priceMax : undefined
+      };
+      window.history.replaceState({ view: viewState }, "", newUrl);
+    }
+  }, [filters, resolvedCategoryId, propCategorySlug, categories]);
+
   // Fetch categories
   useEffect(() => {
     let cancelled = false;
@@ -259,10 +299,16 @@ export function ProductListing({
 
     if (filters.search) params.set("search", filters.search);
 
-    // Use resolvedCategoryId (from prop or slug resolution) for API call
-    const activeCategoryId = resolvedCategoryId || (filters.selectedCategories.length > 0 ? filters.selectedCategories[0] : undefined);
+    const activeCategoryId = filters.selectedCategories.length > 0 ? filters.selectedCategories[0] : undefined;
+    
     if (activeCategoryId) {
-      params.set("categoryId", activeCategoryId);
+      // Find the slug to send to API
+      const cat = categories.find(c => c.id === activeCategoryId);
+      if (cat) {
+        params.set("categoryId", activeCategoryId); // API can take Category ID directly
+      } else {
+        params.set("categoryId", activeCategoryId);
+      }
     }
 
     // Price range filter (only apply when not at extremes)
@@ -323,7 +369,7 @@ export function ProductListing({
     setFilters((prev) => ({
       ...prev,
       [key]: value,
-      page: key !== "page" ? 1 : value,
+      page: key !== "page" ? 1 : (value as unknown as number),
     }));
   }, []);
 
@@ -498,16 +544,13 @@ export function ProductListing({
                   key={`${keyPrefix}-cat-${category.id}`}
                   className="flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <Checkbox
-                    checked={filters.selectedCategories.includes(category.id)}
-                    onCheckedChange={() => toggleCategory(category.id)}
-                    className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-                  />
-                  <span className="text-sm group-hover:text-orange-600 transition-colors flex-1">
+                      <Checkbox
+                        checked={filters.selectedCategories.includes(category.id)}
+                        onCheckedChange={() => toggleCategory(category.id)}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 border-2"
+                      />
+                  <span className="text-sm group-hover:text-blue-700 transition-colors flex-1">
                     {category.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {category.productCount}
                   </span>
                 </label>
               ))
@@ -571,9 +614,9 @@ export function ProductListing({
                   <Checkbox
                     checked={filters.selectedBrands.includes(brand)}
                     onCheckedChange={() => toggleBrand(brand)}
-                    className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                   />
-                  <span className="text-sm group-hover:text-orange-600 transition-colors">
+                  <span className="text-sm group-hover:text-blue-700 transition-colors">
                     {brand}
                   </span>
                 </label>
@@ -599,7 +642,7 @@ export function ProductListing({
               <Checkbox
                 checked={filters.minRating === rating.value}
                 onCheckedChange={() => setRatingFilter(rating.value)}
-                className="data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               />
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -613,7 +656,7 @@ export function ProductListing({
                   />
                 ))}
               </div>
-              <span className="text-sm group-hover:text-orange-600 transition-colors">
+              <span className="text-sm group-hover:text-blue-700 transition-colors">
                 {rating.label}
               </span>
             </label>
@@ -690,11 +733,11 @@ export function ProductListing({
       className="flex flex-col items-center justify-center py-20 px-4 text-center"
     >
       <div className="relative mb-6">
-        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30 flex items-center justify-center">
-          <PackageOpen className="h-14 w-14 text-orange-400/70" />
+        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-orange-950/50 dark:to-orange-900/30 flex items-center justify-center">
+          <PackageOpen className="h-14 w-14 text-blue-400/70" />
         </div>
-        <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
-          <Search className="h-4 w-4 text-orange-500" />
+        <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-blue-100 dark:bg-orange-900/50 flex items-center justify-center">
+          <Search className="h-4 w-4 text-blue-600" />
         </div>
       </div>
       <h3 className="text-xl font-bold mb-2">No products found</h3>
@@ -705,7 +748,7 @@ export function ProductListing({
       <Button
         variant="outline"
         onClick={clearAllFilters}
-        className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-200"
+        className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-all duration-200"
       >
         <RotateCcw className="h-4 w-4 mr-2" />
         Reset All Filters
@@ -726,7 +769,7 @@ export function ProductListing({
     return (
       <Card
         className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-lg border border-border/50"
-        onClick={() => setView({ type: "product-detail", productId: product.id })}
+        onClick={() => setView({ type: "product-detail", productId: product.id, productSlug: product.slug, categorySlug: product.category?.slug })}
       >
         <div className="flex flex-col sm:flex-row">
           {/* Image */}
@@ -758,7 +801,7 @@ export function ProductListing({
                   {product.brand && (
                     <p className="text-xs text-muted-foreground mb-0.5">{product.brand}</p>
                   )}
-                  <h3 className="font-medium text-base sm:text-lg group-hover:text-orange-600 transition-colors line-clamp-2">
+                  <h3 className="font-medium text-base sm:text-lg group-hover:text-blue-700 transition-colors line-clamp-2">
                     {product.name}
                   </h3>
                 </div>
@@ -835,11 +878,23 @@ export function ProductListing({
                 )}
                 <Button
                   size="sm"
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={(e) => { e.stopPropagation(); handleListAddToCart(product); }}
                 >
                   <ShoppingCart className="h-4 w-4 mr-1.5" />
                   Add to Cart
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setView({ type: "product-detail", productId: product.id, productSlug: product.slug, categorySlug: product.category?.slug });
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  View Details
                 </Button>
               </div>
             </div>
@@ -891,7 +946,7 @@ export function ProductListing({
                   e.preventDefault();
                   setView({ type: "home" });
                 }}
-                className="hover:text-orange-600"
+                className="hover:text-blue-700"
               >
                 Home
               </BreadcrumbLink>
@@ -939,14 +994,14 @@ export function ProductListing({
       {/* Search / Query Display Bar */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         {filters.search && (
-          <div className="flex items-center gap-2 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full text-sm">
+          <div className="flex items-center gap-2 bg-blue-50 text-orange-700 px-3 py-1.5 rounded-full text-sm">
             <Search className="h-3.5 w-3.5" />
             <span>
               Showing results for &lsquo;{filters.search}&rsquo;
             </span>
             <button
               onClick={clearSearch}
-              className="hover:bg-orange-100 rounded-full p-0.5 transition-colors"
+              className="hover:bg-blue-100 rounded-full p-0.5 transition-colors"
               aria-label="Clear search"
             >
               <X className="h-3.5 w-3.5" />
@@ -1018,7 +1073,7 @@ export function ProductListing({
                     Filters
                   </h2>
                   {activeFilterCount > 0 && (
-                    <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs">
+                    <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
                       {activeFilterCount}
                     </Badge>
                   )}
@@ -1045,7 +1100,7 @@ export function ProductListing({
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filters
                   {activeFilterCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
                       {activeFilterCount}
                     </span>
                   )}
@@ -1061,7 +1116,7 @@ export function ProductListing({
                   <>
                     Showing{" "}
                     <motion.span
-                      key={filteredProducts.length}
+                      key={`count-${filteredProducts.length}`}
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
@@ -1071,7 +1126,7 @@ export function ProductListing({
                     </motion.span>{" "}
                     of{" "}
                     <motion.span
-                      key={totalProducts}
+                      key={`total-${totalProducts}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3, delay: 0.1 }}
@@ -1111,7 +1166,7 @@ export function ProductListing({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 rounded-none ${viewMode === "grid" ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+                  className={`h-9 w-9 rounded-none ${viewMode === "grid" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
                   onClick={() => setViewMode("grid")}
                   aria-label="Grid view"
                 >
@@ -1120,7 +1175,7 @@ export function ProductListing({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 rounded-none ${viewMode === "list" ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}`}
+                  className={`h-9 w-9 rounded-none ${viewMode === "list" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
                   onClick={() => setViewMode("list")}
                   aria-label="List view"
                 >
@@ -1138,17 +1193,59 @@ export function ProductListing({
           ) : (
             <>
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <motion.div 
+                  className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: {
+                      opacity: 1,
+                      transition: {
+                        staggerChildren: 0.1
+                      }
+                    }
+                  }}
+                  initial="hidden"
+                  animate="show"
+                >
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} onQuickView={setQuickViewProduct} />
+                    <motion.div
+                      key={product.id}
+                      variants={{
+                        hidden: { opacity: 0, scale: 0.95, y: 10 },
+                        show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 200, damping: 20 } }
+                      }}
+                    >
+                      <ProductCard product={product} onQuickView={setQuickViewProduct} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               ) : (
-                <div className="space-y-4">
+                <motion.div 
+                  className="space-y-4"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: {
+                      opacity: 1,
+                      transition: {
+                        staggerChildren: 0.05
+                      }
+                    }
+                  }}
+                  initial="hidden"
+                  animate="show"
+                >
                   {filteredProducts.map((product) => (
-                    <ProductListItem key={product.id} product={product} />
+                    <motion.div
+                      key={product.id}
+                      variants={{
+                        hidden: { opacity: 0, x: -10 },
+                        show: { opacity: 1, x: 0 }
+                      }}
+                    >
+                      <ProductListItem product={product} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               )}
 
               {/* Pagination */}
@@ -1239,7 +1336,7 @@ export function ProductListing({
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs ml-1">
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-xs ml-1">
                     {activeFilterCount}
                   </Badge>
                 )}

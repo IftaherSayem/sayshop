@@ -50,9 +50,9 @@ const STATUS_CONFIG: Record<
   },
   shipped: {
     label: "Shipped",
-    color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-    dotColor: "bg-orange-500",
-    borderColor: "border-l-orange-500",
+    color: "bg-blue-100 text-orange-800 dark:bg-orange-900/30 dark:text-blue-400",
+    dotColor: "bg-blue-600",
+    borderColor: "border-l-blue-600",
   },
   out_for_delivery: {
     label: "Out for Delivery",
@@ -74,13 +74,15 @@ const STATUS_CONFIG: Record<
   },
 }
 
-type StatusFilter = "all" | "processing" | "shipped" | "delivered"
+type StatusFilter = "all" | "processing" | "shipped" | "out_for_delivery" | "delivered" | "cancelled"
 
 const TAB_CONFIG: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "processing", label: "Processing" },
   { value: "shipped", label: "Shipped" },
+  { value: "out_for_delivery", label: "Out for Delivery" },
   { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
 ]
 
 function formatDate(dateStr: string): string {
@@ -263,7 +265,7 @@ export function OrderList() {
   return (
     <main className="min-h-screen bg-background">
       {/* Header Gradient Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -272,7 +274,7 @@ export function OrderList() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white sm:text-3xl">My Orders</h1>
-                <p className="mt-0.5 text-sm text-orange-100">
+                <p className="mt-0.5 text-sm text-blue-100">
                   Track and manage your orders
                 </p>
               </div>
@@ -344,7 +346,7 @@ export function OrderList() {
                 onClick={() => setActiveTab(tab.value)}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === tab.value
-                    ? "bg-orange-500 text-white shadow-sm"
+                    ? "bg-blue-600 text-white shadow-sm"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                 }`}
               >
@@ -384,7 +386,7 @@ export function OrderList() {
             </p>
             <Button
               onClick={handleStartShopping}
-              className="mt-2 bg-orange-500 text-white hover:bg-orange-600"
+              className="mt-2 bg-blue-600 text-white hover:bg-blue-700"
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
               Start Shopping
@@ -465,7 +467,7 @@ export function OrderList() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-orange-500 hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-950/30"
+                              className="text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-orange-950/30"
                               onClick={() => handleViewDetails(order.id)}
                             >
                               View Details

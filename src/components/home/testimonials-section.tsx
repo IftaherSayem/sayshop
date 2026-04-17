@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, ChevronLeft, ChevronRight, Quote, ShieldCheck } from "lucide-react";
 
-const avatarColors = ["bg-orange-500", "bg-emerald-500", "bg-blue-500", "bg-purple-500", "bg-rose-500", "bg-cyan-500", "bg-amber-500"];
+const avatarColors = ["bg-blue-600", "bg-emerald-500", "bg-blue-500", "bg-purple-500", "bg-rose-500", "bg-cyan-500", "bg-amber-500"];
 
 interface Testimonial {
   id: number;
@@ -78,7 +78,7 @@ function StarRating({ rating }: { rating: number }) {
           key={`testi-star-${i}`}
           className={`h-4 w-4 ${
             i < rating
-              ? "fill-orange-400 text-orange-400"
+              ? "fill-blue-400 text-blue-400"
               : "fill-muted text-muted"
           }`}
         />
@@ -162,7 +162,7 @@ export function TestimonialsSection() {
               >
                 <div className="flex flex-col items-center text-center">
                   {/* Quote icon */}
-                  <Quote className="h-10 w-10 text-orange-300 -rotate-[5deg] mb-4" />
+                  <Quote className="h-10 w-10 text-blue-300 -rotate-[5deg] mb-4" />
 
                   {/* Review text */}
                   <p className="text-sm md:text-base text-foreground/90 leading-relaxed max-w-2xl mb-6">
@@ -204,7 +204,7 @@ export function TestimonialsSection() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <div className="absolute -bottom-1 -right-1 bg-orange-500 rounded-full p-0.5">
+                        <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-0.5">
                           <Star className="h-3 w-3 fill-white text-white" />
                         </div>
                       </div>
@@ -218,14 +218,14 @@ export function TestimonialsSection() {
           {/* Navigation Arrows */}
           <button
             onClick={() => paginate(-1)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-5 w-8 h-8 rounded-full bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-orange-50 hover:border-orange-300 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 md:-translate-x-5 w-8 h-8 rounded-full bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-blue-50 hover:border-blue-300 transition-colors"
             aria-label="Previous testimonial"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => paginate(1)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-5 w-8 h-8 rounded-full bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-orange-50 hover:border-orange-300 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 md:translate-x-5 w-8 h-8 rounded-full bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-blue-50 hover:border-blue-300 transition-colors"
             aria-label="Next testimonial"
           >
             <ChevronRight className="h-4 w-4" />
@@ -240,8 +240,8 @@ export function TestimonialsSection() {
               onClick={() => setPage([i, i > page ? 1 : -1])}
               className={`h-2 rounded-full transition-all duration-300 ${
                 i === page
-                  ? "w-6 bg-orange-500"
-                  : "w-2 bg-border hover:bg-orange-300"
+                  ? "w-6 bg-blue-600"
+                  : "w-2 bg-border hover:bg-blue-300"
               }`}
               aria-label={`Go to testimonial ${i + 1}`}
             />

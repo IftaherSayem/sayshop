@@ -115,8 +115,8 @@ function StatItem({ stat, isInView }: { stat: StatConfig; isInView: boolean }) {
       variants={itemVariants}
       className="flex flex-col items-center text-center px-4"
     >
-      <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-orange-500/10 mb-3">
-        <Icon className="h-6 w-6 text-orange-500" />
+      <div className="relative flex items-center justify-center w-12 h-12 rounded-full bg-blue-600/10 mb-3">
+        <Icon className="h-6 w-6 text-blue-600" />
         {/* Checkmark overlay for Free Shipping */}
         {stat.type === "checkmark" && isInView && (
           <motion.div
@@ -132,12 +132,12 @@ function StatItem({ stat, isInView }: { stat: StatConfig; isInView: boolean }) {
         {stat.type === "pulse" && isInView && (
           <>
             <motion.div
-              className="absolute inset-0 rounded-full border-2 border-orange-500/40"
+              className="absolute inset-0 rounded-full border-2 border-blue-600/40"
               animate={{ scale: [1, 1.4], opacity: [0.6, 0] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
             />
             <motion.div
-              className="absolute inset-0 rounded-full border-2 border-orange-500/30"
+              className="absolute inset-0 rounded-full border-2 border-blue-600/30"
               animate={{ scale: [1, 1.6], opacity: [0.4, 0] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut", delay: 0.6 }}
             />
@@ -149,7 +149,7 @@ function StatItem({ stat, isInView }: { stat: StatConfig; isInView: boolean }) {
       {stat.type === "counter" ? (
         <h3 className="font-bold text-base md:text-lg mb-1">
           <span>{count.toLocaleString()}</span>
-          <span className="text-orange-500">{stat.counterSuffix}</span>
+          <span className="text-blue-600">{stat.counterSuffix}</span>
           <span>{" "}{stat.title}</span>
         </h3>
       ) : stat.type === "text" ? (
@@ -160,7 +160,7 @@ function StatItem({ stat, isInView }: { stat: StatConfig; isInView: boolean }) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="text-orange-500"
+                className="text-blue-600"
               >
                 {stat.animatedText}
               </motion.span>

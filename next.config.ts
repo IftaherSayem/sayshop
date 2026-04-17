@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
+  devIndicators: {
+    staticIndicator: false,
+    buildActivity: false,
   },
-  reactStrictMode: false,
   // SPA rewrites: serve index page for all client-side routes
   // These work on both Vercel and Netlify
   async rewrites() {
@@ -20,29 +19,42 @@ const nextConfig: NextConfig = {
       { source: "/wishlist", destination: "/" },
       { source: "/compare", destination: "/" },
       { source: "/admin", destination: "/" },
-      { source: "/auth", destination: "/" },
+      { source: "/manager", destination: "/" },
+      { source: "/auth/:path*", destination: "/" },
       { source: "/profile", destination: "/" },
     ];
   },
-  async headers() {
-    return [
+  // Security headers are handled in middleware.ts to avoid duplication.
+  // CORS for API routes should be configured per-route, not globally.
+  
+  // Resolve cross-origin warning when accessing from local IP
+  allowedDevOrigins: ["192.168.0.140"],
+  images: {
+    remotePatterns: [
       {
-        source: "/(.*)",
-        headers: [
-          // CORS for dev/preview
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS, POST, PUT, DELETE" },
-          { key: "Access-Control-Allow-Headers", value: "*" },
-          // Security headers
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "X-XSS-Protection", value: "1; mode=block" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        ],
+        protocol: 'https',
+        hostname: 'zknhitqgjoyggibahbqh.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
       },
-    ];
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ibb.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.ibb.co.com',
+      },
+    ],
   },
-};
+} as any;
 
 export default nextConfig;

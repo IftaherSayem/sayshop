@@ -64,8 +64,8 @@ export function RecentlyViewedSection() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/30">
-                <Eye className="h-4 w-4 text-orange-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 dark:bg-orange-950/30">
+                <Eye className="h-4 w-4 text-blue-600" />
               </div>
               <Skeleton className="h-6 w-40" />
             </div>
@@ -105,8 +105,8 @@ export function RecentlyViewedSection() {
           {/* Section header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/30">
-                <Eye className="h-4 w-4 text-orange-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 dark:bg-orange-950/30">
+                <Eye className="h-4 w-4 text-blue-600" />
               </div>
               <h2 className="text-xl font-bold">Recently Viewed</h2>
               <span className="text-sm text-muted-foreground">
@@ -134,7 +134,7 @@ export function RecentlyViewedSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.2 }}
                 onClick={() => handleNavigate(item.productId)}
-                className="flex-shrink-0 flex items-center gap-3 p-2.5 rounded-xl border border-border/50 hover:border-orange-200 hover:shadow-sm bg-card transition-all duration-200 group w-[220px] sm:w-[240px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                className="flex-shrink-0 flex items-center gap-3 p-2.5 rounded-xl border border-border/50 hover:border-blue-200 hover:shadow-sm bg-card transition-all duration-200 group w-[220px] sm:w-[240px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
                 {/* Product image */}
                 <div className="relative h-[72px] w-[72px] flex-shrink-0 rounded-lg overflow-hidden bg-muted">
@@ -149,7 +149,7 @@ export function RecentlyViewedSection() {
 
                 {/* Product info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium line-clamp-2 group-hover:text-orange-600 transition-colors">
+                  <h4 className="text-sm font-medium line-clamp-2 group-hover:text-blue-700 transition-colors">
                     {item.name}
                   </h4>
                   <div className="flex items-center gap-1.5 mt-1">

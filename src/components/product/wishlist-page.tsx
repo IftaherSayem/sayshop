@@ -113,7 +113,7 @@ export function WishlistPage() {
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
         <button
           onClick={() => setView({ type: "home" })}
-          className="transition-colors hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+          className="transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
         >
           Home
         </button>
@@ -146,7 +146,7 @@ export function WishlistPage() {
               variant="outline"
               size="sm"
               onClick={handleShareWishlist}
-              className="text-orange-600 border-orange-300 hover:bg-orange-500 hover:text-white hover:border-orange-500 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-500 dark:hover:text-white"
+              className="text-blue-700 border-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 dark:text-blue-400 dark:border-orange-700 dark:hover:bg-blue-600 dark:hover:text-white"
             >
               <Share2 className="mr-1.5 h-3.5 w-3.5" />
               Share Wishlist
@@ -154,7 +154,7 @@ export function WishlistPage() {
             <Button
               size="sm"
               onClick={handleMoveAllToCart}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
               Move All to Cart
@@ -218,7 +218,7 @@ export function WishlistPage() {
           </p>
           <Button
             onClick={() => setView({ type: "products" })}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             Browse Products
           </Button>
@@ -271,7 +271,7 @@ export function WishlistPage() {
                           e.stopPropagation()
                           handleRemoveItem(item.productId, item.name)
                         }}
-                        className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:bg-neutral-800/90 dark:hover:bg-red-950 dark:hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                        className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-muted-foreground opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:bg-neutral-800/90 dark:hover:bg-red-950 dark:hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                         aria-label="Remove from wishlist"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -281,7 +281,7 @@ export function WishlistPage() {
                       <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 transition-all duration-300 translate-y-4 group-hover:translate-y-0 group-hover:opacity-100">
                         <Button
                           size="sm"
-                          className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                           onClick={(e) => {
                             e.stopPropagation()
                             cartAddItem({
@@ -306,7 +306,7 @@ export function WishlistPage() {
                       className="cursor-pointer p-3"
                       onClick={() => handleNavigateToProduct(item.productId)}
                     >
-                      <h3 className="mb-2 text-sm font-medium line-clamp-2 group-hover:text-orange-600 transition-colors">
+                      <h3 className="mb-2 text-sm font-medium line-clamp-2 group-hover:text-blue-700 transition-colors">
                         {item.name}
                       </h3>
                       <div className="flex items-center gap-2">

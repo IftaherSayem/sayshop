@@ -61,6 +61,12 @@ export const useWishlistStore = create<WishlistStore>()(
     {
       name: "say-shop-wishlist",
       version: 3,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 3) {
+          return { items: [] };
+        }
+        return persistedState;
+      },
     }
   )
 );

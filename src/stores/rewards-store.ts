@@ -59,6 +59,12 @@ export const useRewardsStore = create<RewardsStore>()(
     {
       name: "say-shop-rewards",
       version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          return { points: 250, history: [] };
+        }
+        return persistedState;
+      },
     }
   )
 );

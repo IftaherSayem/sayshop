@@ -13,19 +13,22 @@ const slides = [
     headline: "Summer Tech Sale",
     subtitle: "Up to 40% off on premium electronics",
     cta: "Shop Now",
-    gradient: "from-orange-600/80 via-red-600/50 to-transparent",
+    gradient: "from-blue-900/80 via-blue-800/50 to-transparent",
+    image: "/images/hero/banner1.png"
   },
   {
     headline: "New Arrivals",
     subtitle: "Discover the latest gadgets and accessories",
     cta: "Explore",
     gradient: "from-blue-600/80 via-purple-600/50 to-transparent",
+    image: "/images/hero/banner2.png"
   },
   {
     headline: "Free Shipping",
     subtitle: "On all orders over $50, no code needed",
     cta: "Start Shopping",
     gradient: "from-green-600/80 via-teal-600/50 to-transparent",
+    image: "/images/hero/banner3.png"
   },
 ];
 
@@ -97,7 +100,7 @@ export function HeroBanner() {
           >
             {/* Background Image */}
             <Image
-              src="/images/hero/banner1.png"
+              src={slides[currentSlide].image}
               alt={slides[currentSlide].headline}
               fill
               className="object-cover"
@@ -151,7 +154,7 @@ export function HeroBanner() {
           ease: "easeInOut",
         }}
       >
-        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 px-4 py-1.5 text-sm font-bold shadow-lg shadow-orange-500/25">
+        <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 px-4 py-1.5 text-sm font-bold shadow-lg shadow-amber-500/25">
           🔥 HOT DEALS
         </Badge>
       </motion.div>
@@ -178,7 +181,7 @@ export function HeroBanner() {
             </p>
             <Button
               size="lg"
-              className="hero-cta-shimmer bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 hover:from-orange-600 hover:via-orange-500 hover:to-orange-600 text-white text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105"
+              className="hero-cta-shimmer bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 hover:from-blue-700 hover:via-indigo-600 hover:to-blue-700 text-white text-sm sm:text-base px-6 sm:px-8 py-5 sm:py-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105"
               onClick={handleCTA}
             >
               {slides[currentSlide].cta}
@@ -213,11 +216,10 @@ export function HeroBanner() {
           <button
             key={`hero-slide-dot-${index}`}
             onClick={() => goToSlide(index)}
-            className={`transition-all duration-300 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 ${
-              index === currentSlide
-                ? "w-8 h-3 bg-orange-500"
-                : "w-3 h-3 bg-white/60 hover:bg-white/80 active:bg-white/90"
-            }`}
+            className={`transition-all duration-300 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${index === currentSlide
+              ? "w-8 h-3 bg-blue-500"
+              : "w-3 h-3 bg-white/60 hover:bg-white/80 active:bg-white/90"
+              }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}

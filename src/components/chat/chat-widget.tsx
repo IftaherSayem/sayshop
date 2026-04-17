@@ -33,17 +33,17 @@ function TypingIndicator() {
       <div className="flex items-center gap-1">
         <span className="sr-only">AI is typing</span>
         <motion.span
-          className="h-2 w-2 rounded-full bg-orange-400"
+          className="h-2 w-2 rounded-full bg-blue-400"
           animate={{ y: [0, -6, 0] }}
           transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
         />
         <motion.span
-          className="h-2 w-2 rounded-full bg-orange-400"
+          className="h-2 w-2 rounded-full bg-blue-400"
           animate={{ y: [0, -6, 0] }}
           transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
         />
         <motion.span
-          className="h-2 w-2 rounded-full bg-orange-400"
+          className="h-2 w-2 rounded-full bg-blue-400"
           animate={{ y: [0, -6, 0] }}
           transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
         />
@@ -52,7 +52,10 @@ function TypingIndicator() {
   )
 }
 
+import { useAuthStore } from "@/stores/auth-store"
+
 export function ChatWidget() {
+  const { isAuthenticated, _hydrated } = useAuthStore()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -152,6 +155,8 @@ export function ChatWidget() {
     sendMessage(message)
   }
 
+  if (!_hydrated || !isAuthenticated) return null
+
   return (
     <div className="fixed bottom-20 right-4 z-50 md:bottom-6">
       <AnimatePresence mode="wait">
@@ -167,7 +172,7 @@ export function ChatWidget() {
             aria-label="AI Shopping Assistant"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-white">
+            <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-white">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
                   <ShoppingBag className="h-4 w-4" />
@@ -179,7 +184,7 @@ export function ChatWidget() {
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-[11px] text-orange-100">Online</span>
+                    <span className="text-[11px] text-blue-100">Online</span>
                   </div>
                 </div>
               </div>
@@ -207,7 +212,7 @@ export function ChatWidget() {
                     <div
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
                         msg.role === "bot"
-                          ? "bg-orange-100 text-orange-600"
+                          ? "bg-blue-100 text-blue-700"
                           : "bg-muted-foreground/20 text-muted-foreground"
                       }`}
                     >
@@ -222,7 +227,7 @@ export function ChatWidget() {
                     <div
                       className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                         msg.role === "user"
-                          ? "rounded-br-md bg-orange-500 text-white"
+                          ? "rounded-br-md bg-blue-600 text-white"
                           : "rounded-bl-md bg-muted text-foreground"
                       }`}
                     >
@@ -237,7 +242,7 @@ export function ChatWidget() {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex gap-2"
                   >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
                       <ShoppingBag className="h-3.5 w-3.5" />
                     </div>
                     <div className="rounded-2xl rounded-bl-md bg-muted">
@@ -263,7 +268,7 @@ export function ChatWidget() {
                       <button
                         key={action.label}
                         onClick={() => handleQuickAction(action.message)}
-                        className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                        className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                       >
                         <Icon className="h-3 w-3" />
                         {action.label}
@@ -287,13 +292,13 @@ export function ChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
                   disabled={isTyping}
-                  className="flex-1 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-orange-400 focus:ring-1 focus:ring-orange-400 disabled:opacity-50"
+                  className="flex-1 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:opacity-50"
                   aria-label="Chat message input"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isTyping}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
                   aria-label="Send message"
                 >
                   <Send className="h-4 w-4" />
@@ -304,46 +309,28 @@ export function ChatWidget() {
         ) : null}
       </AnimatePresence>
 
-      {/* Floating Toggle Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 transition-shadow hover:shadow-xl hover:shadow-orange-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-        aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
-      >
-        <AnimatePresence mode="wait">
-          {isOpen ? (
-            <motion.span
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <X className="h-6 w-6" />
-            </motion.span>
-          ) : (
-            <motion.span
-              key="open"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <MessageCircle className="h-6 w-6" />
-            </motion.span>
-          )}
-        </AnimatePresence>
-
-        {/* Hover Tooltip */}
+      <AnimatePresence>
         {!isOpen && (
-          <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-            AI Assistant
-            <span className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900" />
-          </span>
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsOpen(true)}
+            className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/30 transition-shadow hover:shadow-xl hover:shadow-blue-600/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 mt-4"
+            aria-label="Open AI Assistant"
+          >
+            <MessageCircle className="h-6 w-6" />
+            
+            {/* Hover Tooltip */}
+            <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              AI Assistant
+              <span className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-gray-900" />
+            </span>
+          </motion.button>
         )}
-      </motion.button>
+      </AnimatePresence>
     </div>
   )
 }

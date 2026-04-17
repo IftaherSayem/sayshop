@@ -128,9 +128,9 @@ export const useCartStore = create<CartStore>()(
       version: 3,
       partialize: (state) => ({ items: state.items, savedForLater: state.savedForLater }),
       merge: (persisted, current) => {
-        const p = persisted as { items?: CartItem[]; savedForLater?: CartItem[]; _version?: number };
-        // If version changed or no valid persisted state, start fresh
-        if (!p || !p._version || p._version < 3) {
+        const p = persisted as { items?: CartItem[]; savedForLater?: CartItem[] } | null;
+        // If no valid persisted state, start fresh
+        if (!p) {
           return { ...current, items: [], savedForLater: [] };
         }
         const validItems = (p.items || []).filter(

@@ -122,7 +122,7 @@ export function QuickViewModal({ product, open, onClose }: QuickViewModalProps) 
                       }}
                       className={`w-2 h-2 rounded-full transition-all ${
                         index === selectedImageIndex
-                          ? 'bg-orange-400 w-4'
+                          ? 'bg-blue-400 w-4'
                           : 'bg-white/60 hover:bg-white/90'
                       }`}
                       aria-label={`View image ${index + 1}`}
@@ -234,7 +234,7 @@ export function QuickViewModal({ product, open, onClose }: QuickViewModalProps) 
               {/* Actions */}
               <div className="flex flex-col gap-2 mt-auto pt-2">
                 <Button
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                   onClick={handleAddToCart}
                   disabled={product.stock === 0}
                 >
@@ -243,7 +243,7 @@ export function QuickViewModal({ product, open, onClose }: QuickViewModalProps) 
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full font-semibold border-orange-500 text-orange-500 hover:bg-orange-50"
+                  className="w-full font-semibold border-blue-600 text-blue-600 hover:bg-blue-50"
                   onClick={handleViewFull}
                 >
                   View Full Details

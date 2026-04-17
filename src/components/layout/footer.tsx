@@ -28,9 +28,9 @@ const footerSections = [
   {
     title: "Payment Methods",
     links: [
-      { label: "Credit Card", href: "#" },
-      { label: "PayPal", href: "#" },
-      { label: "Apple Pay", href: "#" },
+      { label: "Bkash", href: "#" },
+      { label: "Nagad", href: "#" },
+      { label: "Rocket", href: "#" },
       { label: "Google Pay", href: "#" },
     ],
   },
@@ -92,7 +92,7 @@ function MastercardIcon() {
   return (
     <div className="flex h-7 items-center gap-0.5 rounded bg-neutral-800 px-2">
       <span className="text-[10px] font-bold text-red-500">●</span>
-      <span className="text-[10px] font-bold text-orange-400">●</span>
+      <span className="text-[10px] font-bold text-blue-400">●</span>
     </div>
   )
 }
@@ -173,12 +173,12 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t bg-neutral-900 text-neutral-300">
       {/* Gradient separator at the very top */}
-      <div className="h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-blue-600/30 to-transparent" />
 
       {/* Back to top button */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="block w-full bg-neutral-800 py-3 text-center text-sm text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+        className="block w-full bg-neutral-800 py-3 text-center text-sm text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
       >
         Back to top
       </button>
@@ -189,10 +189,10 @@ export function Footer() {
         <div className="mb-8 flex flex-col items-center gap-2 sm:flex-row">
           <div className="flex flex-col items-center gap-1 sm:items-start">
             <div className="flex items-center gap-2.5">
-              <Image src="/images/logo.png" alt="Say Shop" width={32} height={32} className="h-8 w-8 rounded-lg object-cover" />
-              <span className="text-xl font-bold text-orange-500">Say Shop</span>
+              <Image src="/images/logo-premium.png" alt="SayShop" width={32} height={32} className="h-8 w-8 rounded-lg object-contain" />
+              <span className="text-xl font-bold text-white tracking-widest">SAYSHOP</span>
             </div>
-            <p className="text-xs text-neutral-500">Your Trusted Online Store</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-medium">Premier E-Commerce Experience</p>
           </div>
         </div>
 
@@ -209,14 +209,14 @@ export function Footer() {
                 placeholder="Get exclusive deals via email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                className="h-8 border-neutral-700 bg-neutral-800 pl-8 text-xs text-neutral-300 placeholder:text-neutral-500 focus-visible:ring-orange-500"
+                className="h-8 border-neutral-700 bg-neutral-800 pl-8 text-xs text-neutral-300 placeholder:text-neutral-500 focus-visible:ring-blue-600"
               />
             </div>
             <div className="relative">
               <Button
                 type="submit"
                 size="sm"
-                className="h-8 shrink-0 bg-orange-500 px-3 text-xs text-white hover:bg-orange-600"
+                className="h-8 shrink-0 bg-blue-600 px-3 text-xs text-white hover:bg-blue-700"
               >
                 {newsletterSubmitted ? (
                   <motion.span
@@ -249,28 +249,28 @@ export function Footer() {
         {/* Trust Badges Row */}
         <div className="mb-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="flex flex-col items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-5">
-            <Truck className="h-6 w-6 text-orange-400" />
+            <Truck className="h-6 w-6 text-blue-400" />
             <div className="text-center">
               <p className="text-xs font-semibold text-neutral-200">Free Shipping</p>
               <p className="text-[11px] text-neutral-500">On orders over $50</p>
             </div>
           </div>
           <div className="flex flex-col items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-5">
-            <ShieldCheck className="h-6 w-6 text-orange-400" />
+            <ShieldCheck className="h-6 w-6 text-blue-400" />
             <div className="text-center">
               <p className="text-xs font-semibold text-neutral-200">Secure Payment</p>
               <p className="text-[11px] text-neutral-500">100% secure checkout</p>
             </div>
           </div>
           <div className="flex flex-col items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-5">
-            <RotateCcw className="h-6 w-6 text-orange-400" />
+            <RotateCcw className="h-6 w-6 text-blue-400" />
             <div className="text-center">
               <p className="text-xs font-semibold text-neutral-200">Easy Returns</p>
               <p className="text-[11px] text-neutral-500">30-day return policy</p>
             </div>
           </div>
           <div className="flex flex-col items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-800/50 px-4 py-5">
-            <Headphones className="h-6 w-6 text-orange-400" />
+            <Headphones className="h-6 w-6 text-blue-400" />
             <div className="text-center">
               <p className="text-xs font-semibold text-neutral-200">24/7 Support</p>
               <p className="text-[11px] text-neutral-500">Dedicated support</p>
@@ -284,7 +284,7 @@ export function Footer() {
             <div key={section.title}>
               <h3 className="group relative mb-4 text-sm font-semibold uppercase tracking-wider text-white">
                 {section.title}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-orange-500 transition-all duration-300 group-hover:w-full" />
+                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
               </h3>
               <ul className="space-y-2.5">
                 {section.links.map((link) => (
@@ -294,18 +294,17 @@ export function Footer() {
                       onClick={(e) =>
                         handleLinkClick(e, "isTrackOrder" in link && link.isTrackOrder)
                       }
-                      className={`group relative inline-block text-sm text-neutral-400 transition-colors hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded ${
-                        "isTrackOrder" in link && link.isTrackOrder
-                          ? "font-medium text-neutral-300 hover:text-orange-500"
-                          : ""
-                      }`}
+                      className={`group relative inline-block text-sm text-neutral-400 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${"isTrackOrder" in link && link.isTrackOrder
+                        ? "font-medium text-neutral-300 hover:text-blue-600"
+                        : ""
+                        }`}
                     >
                       {"isTrackOrder" in link && link.isTrackOrder && (
                         <Package className="mr-1.5 inline-block h-3.5 w-3.5 -translate-y-px" />
                       )}
                       {link.label}
                       {/* Hover underline animation */}
-                      <span className="absolute bottom-0 left-0 h-px w-0 bg-orange-500 transition-all duration-300 group-hover:w-full" />
+                      <span className="absolute bottom-0 left-0 h-px w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
                     </a>
                   </li>
                 ))}
@@ -365,7 +364,7 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-orange-500 hover:text-white hover:scale-110 hover:rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-blue-600 hover:text-white hover:scale-110 hover:rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Facebook"
             >
               <FacebookIcon />
@@ -373,7 +372,7 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-orange-500 hover:text-white hover:scale-110 hover:-rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-blue-600 hover:text-white hover:scale-110 hover:-rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Twitter / X"
             >
               <TwitterIcon />
@@ -381,7 +380,7 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-orange-500 hover:text-white hover:scale-110 hover:rotate-[12deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-blue-600 hover:text-white hover:scale-110 hover:rotate-[12deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Instagram"
             >
               <InstagramIcon />
@@ -389,7 +388,7 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-orange-500 hover:text-white hover:scale-110 hover:-rotate-[12deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-blue-600 hover:text-white hover:scale-110 hover:-rotate-[12deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="YouTube"
             >
               <YouTubeIcon />
@@ -397,7 +396,7 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-orange-500 hover:text-white hover:scale-110 hover:rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-neutral-400 transition-all duration-200 hover:bg-blue-600 hover:text-white hover:scale-110 hover:rotate-[8deg] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               aria-label="Message"
             >
               <MessageCircle className="h-4 w-4" />
@@ -416,14 +415,14 @@ export function Footer() {
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="relative text-xs text-neutral-500 transition-colors hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+              className="relative text-xs text-neutral-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             >
               Privacy Policy
             </a>
             <a
               href="#"
               onClick={(e) => e.preventDefault()}
-              className="relative text-xs text-neutral-500 transition-colors hover:text-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+              className="relative text-xs text-neutral-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             >
               Terms of Service
             </a>

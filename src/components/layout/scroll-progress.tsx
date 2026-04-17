@@ -48,7 +48,7 @@ export function ScrollProgress() {
   return (
     <div className="fixed top-0 left-0 right-0 z-[60] h-1">
       <motion.div
-        className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500"
+        className="h-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600"
         initial={{ width: 0 }}
         animate={{
           width: `${progress}%`,

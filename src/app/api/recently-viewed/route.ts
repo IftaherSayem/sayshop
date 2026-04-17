@@ -43,7 +43,7 @@ export async function GET() {
 
     // Transform to frontend format
     const items = (data || []).map((row) => {
-      const product = row.products as Record<string, unknown> | null
+      const product = row.products as unknown as Record<string, unknown> | null
       const rawImages = product?.images as string[] | string | null
       let parsedImages: Array<{ url: string }> = []
 

@@ -87,7 +87,7 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <Ruler className="h-5 w-5 text-orange-500" />
+            <Ruler className="h-5 w-5 text-blue-600" />
             Size Guide
           </DialogTitle>
           <DialogDescription>
@@ -99,15 +99,15 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
           {/* Size Charts Tabs */}
           <Tabs defaultValue="tops" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="tops" className="gap-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+              <TabsTrigger value="tops" className="gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                 <Shirt className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Tops</span>
               </TabsTrigger>
-              <TabsTrigger value="bottoms" className="gap-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+              <TabsTrigger value="bottoms" className="gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                 <Scissors className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Bottoms</span>
               </TabsTrigger>
-              <TabsTrigger value="shoes" className="gap-1.5 data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+              <TabsTrigger value="shoes" className="gap-1.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                 <Footprints className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Shoes</span>
               </TabsTrigger>
@@ -118,12 +118,12 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
               <div className="rounded-lg border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-50 dark:hover:bg-orange-950/30">
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Size</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Chest (in)</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Waist (in)</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Length (in)</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Hips (in)</TableHead>
+                    <TableRow className="bg-blue-50 dark:bg-orange-950/30 hover:bg-blue-50 dark:hover:bg-orange-950/30">
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Size</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Chest (in)</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Waist (in)</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Length (in)</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Hips (in)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -149,11 +149,11 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
               <div className="rounded-lg border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-50 dark:hover:bg-orange-950/30">
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Size</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Waist (in)</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Hips (in)</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Inseam (in)</TableHead>
+                    <TableRow className="bg-blue-50 dark:bg-orange-950/30 hover:bg-blue-50 dark:hover:bg-orange-950/30">
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Size</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Waist (in)</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Hips (in)</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Inseam (in)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -178,13 +178,13 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
               <div className="rounded-lg border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-50 dark:hover:bg-orange-950/30">
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">Size</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">US Men</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">US Women</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">UK</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">EU</TableHead>
-                      <TableHead className="text-orange-600 dark:text-orange-400 font-semibold">CM</TableHead>
+                    <TableRow className="bg-blue-50 dark:bg-orange-950/30 hover:bg-blue-50 dark:hover:bg-orange-950/30">
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">Size</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">US Men</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">US Women</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">UK</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">EU</TableHead>
+                      <TableHead className="text-blue-700 dark:text-blue-400 font-semibold">CM</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -213,7 +213,7 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
           {/* How to Measure Section */}
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold mb-4">
-              <Ruler className="h-4 w-4 text-orange-500" />
+              <Ruler className="h-4 w-4 text-blue-600" />
               How to Measure
             </h3>
             <div className="space-y-4">
@@ -221,12 +221,12 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
                 const StepIcon = step.icon;
                 return (
                   <div key={step.title} className="flex gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-orange-950/50 dark:text-blue-400">
                       <StepIcon className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 text-xs px-2 py-0">
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-orange-950/40 dark:text-blue-400 text-xs px-2 py-0">
                           Step {index + 1}
                         </Badge>
                         <span className="font-medium text-sm">{step.title}</span>
@@ -247,13 +247,13 @@ export function SizeGuideModal({ open, onOpenChange }: SizeGuideModalProps) {
           {/* Tips Section */}
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold mb-3">
-              <Lightbulb className="h-4 w-4 text-orange-500" />
+              <Lightbulb className="h-4 w-4 text-blue-600" />
               Tips for the Best Fit
             </h3>
             <ul className="space-y-2">
               {TIPS.map((tip, index) => (
                 <li key={`tip-${index}`} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
                   {tip}
                 </li>
               ))}

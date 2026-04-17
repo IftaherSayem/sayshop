@@ -72,6 +72,12 @@ export const useCompareStore = create<CompareStore>()(
     {
       name: "say-shop-compare",
       version: 3,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 3) {
+          return { items: [] };
+        }
+        return persistedState;
+      },
     }
   )
 );

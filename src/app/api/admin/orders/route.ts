@@ -2,23 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdmin } from '../_auth'
 import { toCamel } from '@/lib/supabase/helpers'
+import { invalidateStatsCache } from '@/lib/admin-cache'
+import { sendNotification } from '@/lib/notification-service'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const VALID_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'refunded']
+const VALID_STATUSES = ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled']
 const VALID_PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded']
 
 function transformOrder(o: Record<string, unknown>) {
   const orderItems = Array.isArray(o.order_items) ? o.order_items : []
   const enrichedItems = orderItems.map((item: Record<string, unknown>) => ({
-    ...toCamel(item),
+    ...(toCamel(item) as Record<string, unknown>),
     productName: item.products ? (item.products as Record<string, unknown>).name : null,
     productSlug: item.products ? (item.products as Record<string, unknown>).slug : null,
   }))
 
-  const profile = o.profiles as Record<string, unknown> | null
   const user = o.users as Record<string, unknown> | null
-  const payment = o.payments as Record<string, unknown> | null
+  const profile = user?.profiles as Record<string, unknown> | null
+  const paymentArray = Array.isArray(o.payments) ? o.payments : []
+  const payment = paymentArray[0] as Record<string, unknown> | null
 
   return {
     id: o.id,
@@ -31,9 +34,9 @@ function transformOrder(o: Record<string, unknown>) {
     status: o.status,
     paymentStatus: o.payment_status,
     paymentMethod: payment ? payment.provider : null,
-    customerName: profile ? profile.full_name : (user ? user.email : 'Unknown'),
-    customerEmail: user ? user.email : null,
-    customerPhone: profile ? profile.phone : null,
+    customerName: profile?.full_name || profile?.fullName || (user ? user.email : 'Unknown'),
+    customerEmail: user ? (user.email as string) : null,
+    customerPhone: profile ? (profile.phone || profile.phoneNumber) : null,
     shippingAddress: o.shipping_address,
     notes: o.notes,
     orderItems: enrichedItems,
@@ -64,55 +67,82 @@ export async function GET(request: NextRequest) {
           id, order_id, product_id, quantity, price,
           products(name, slug)
         ),
-        users(id, email),
-        profiles(full_name, phone),
         payments(provider)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
-
     if (status) {
       query = query.eq('status', status)
     }
 
-    if (search) {
-      query = query.or(`id.ilike.%${search}%`)
+    if (!search && !status) {
+      const from = (page - 1) * limit
+      const to = from + limit - 1
+      query = query.range(from, to)
+    } else {
+      // If searching, fetch more to ensure we find matches across tables
+      query = query.range(0, 99)
     }
-
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-    query = query.range(from, to)
 
     const { data: orders, count, error: queryError } = await query
 
     if (queryError) {
-      console.error('Admin orders GET error:', queryError)
-      return NextResponse.json({ error: 'Failed to fetch orders', details: queryError.message }, { status: 500 })
+      console.error('Admin orders GET query error:', queryError)
+      return NextResponse.json({ orders: [], total: 0, page, totalPages: 0 })
     }
 
-    // Filter by search on client side if search term looks like a name/email
-    let filtered = orders || []
+    // Since joins with users/profiles can be tricky with RLS, fetch them separately
+    const userIds = [...new Set((orders || []).map((o: any) => o.user_id))].filter(Boolean)
+    let userData: Record<string, any> = {}
+    
+    if (userIds.length > 0) {
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, email, profiles(full_name, phone, fullName)')
+        .in('id', userIds)
+      
+      if (users) {
+        userData = Object.fromEntries(users.map((u: any) => [u.id, u]))
+      }
+    }
+
+    const transformed = (orders || []).map((o: any) => {
+      const u = userData[o.user_id]
+      return transformOrder({ ...o, users: u })
+    })
+
+    // Comprehensive client-side filtering for search
+    let filtered = transformed
     if (search) {
-      const lowerSearch = search.toLowerCase()
-      filtered = filtered.filter((o: Record<string, unknown>) => {
-        const profile = o.profiles as Record<string, unknown> | null
-        const user = o.users as Record<string, unknown> | null
-        const orderNum = `SS-${String(o.id).slice(0, 8).toUpperCase()}`.toLowerCase()
-        const name = profile?.full_name?.toString().toLowerCase() || ''
-        const email = user?.email?.toString().toLowerCase() || ''
-        return orderNum.includes(lowerSearch) || name.includes(lowerSearch) || email.includes(lowerSearch)
+      const lowerSearch = search.toLowerCase().replace(/^ss-/, '')
+      filtered = transformed.filter((o: any) => {
+        const name = (o.customerName || '').toLowerCase()
+        const email = (o.customerEmail || '').toLowerCase()
+        const orderNo = (o.orderNumber || '').toLowerCase().replace(/^ss-/, '')
+        const items = o.orderItems || []
+        const matchItem = items.some((item: any) => 
+          (item.productName || item.name || '').toLowerCase().includes(lowerSearch)
+        )
+        const matchId = (o.id || '').toLowerCase().includes(lowerSearch)
+        return name.includes(lowerSearch) || 
+               email.includes(lowerSearch) || 
+               orderNo.includes(lowerSearch) || 
+               matchId ||
+               matchItem
       })
     }
 
-    const transformed = filtered.map((o: Record<string, unknown>) => transformOrder(o))
-
     return NextResponse.json({
-      orders: transformed,
-      total: count || 0,
+      orders: filtered,
+      total: search ? filtered.length : (count || 0),
       page,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil((search ? filtered.length : (count || 0)) / limit),
     })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
+  } catch (err: any) {
+    console.error('Admin orders GET unexpected error:', err)
+    return NextResponse.json({ 
+      error: 'Failed to fetch orders',
+      message: err.message 
+    }, { status: 500 })
   }
 }
 
@@ -125,11 +155,14 @@ export async function PUT(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient()
     const body = await request.json()
-    const { id, status, paymentStatus } = body
+    let { id, status, paymentStatus } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
     }
+
+    // Map legacy 'approved' or 'confirmed' to 'processing' for DB compatibility
+    if (status === 'approved' || status === 'confirmed') status = 'processing'
 
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
@@ -167,6 +200,19 @@ export async function PUT(request: NextRequest) {
     if (updateError) {
       console.error('Update order error:', updateError)
       return NextResponse.json({ error: 'Failed to update order', details: updateError.message }, { status: 500 })
+    }
+
+    invalidateStatsCache()
+
+    // 🔔 Notify Customer about status change
+    if (status) {
+      sendNotification({
+        recipientId: order.user_id,
+        type: 'order_update',
+        title: 'Order Status Updated',
+        message: `Your order ${order.id.slice(0, 8).toUpperCase()} is now ${status.replace(/_/g, ' ')}.`,
+        link: `/profile?tab=orders&id=${order.id}`
+      }).catch(err => console.error('[NOTIFICATION] Failed to notify customer:', err))
     }
 
     return NextResponse.json({

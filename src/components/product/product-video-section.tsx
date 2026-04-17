@@ -47,7 +47,7 @@ export function ProductVideoSection({ productId, productName }: ProductVideoSect
     >
       {/* Section Heading */}
       <div className="flex items-center gap-2">
-        <PlayCircle className="h-6 w-6 text-orange-500" />
+        <PlayCircle className="h-6 w-6 text-blue-600" />
         <h2 className="text-2xl font-bold">Product Video</h2>
       </div>
 
@@ -88,9 +88,9 @@ export function ProductVideoSection({ productId, productName }: ProductVideoSect
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
             {/* Glow effect */}
-            <div className="absolute inset-0 bg-orange-500/30 rounded-full blur-xl scale-150 group-hover:bg-orange-500/50 transition-colors duration-300" />
+            <div className="absolute inset-0 bg-blue-600/30 rounded-full blur-xl scale-150 group-hover:bg-blue-600/50 transition-colors duration-300" />
             {/* Circle button */}
-            <div className="relative bg-gradient-to-br from-orange-500 to-orange-600 rounded-full p-5 shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:shadow-orange-500/50 transition-all duration-300">
+            <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 rounded-full p-5 shadow-lg shadow-blue-600/30 group-hover:scale-110 group-hover:shadow-blue-600/50 transition-all duration-300">
               <Play className="h-8 w-8 text-white fill-white ml-1" />
             </div>
           </div>
@@ -115,9 +115,9 @@ export function ProductVideoSection({ productId, productName }: ProductVideoSect
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="flex items-start gap-3 rounded-lg border bg-card p-4 hover:border-orange-200 hover:shadow-sm transition-all duration-200"
+            className="flex items-start gap-3 rounded-lg border bg-card p-4 hover:border-blue-200 hover:shadow-sm transition-all duration-200"
           >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <item.icon className="h-5 w-5" />
             </div>
             <div className="min-w-0">

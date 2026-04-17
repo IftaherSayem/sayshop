@@ -101,7 +101,7 @@ export interface CartItem {
 export type AppView =
   | { type: "home" }
   | { type: "products"; categoryId?: string; categorySlug?: string; search?: string; sort?: string; minPrice?: number; maxPrice?: number }
-  | { type: "product-detail"; productId: string; productSlug?: string }
+  | { type: "product-detail"; productId: string; productSlug?: string; categorySlug?: string }
   | { type: "cart" }
   | { type: "checkout" }
   | { type: "orders" }
@@ -109,9 +109,9 @@ export type AppView =
   | { type: "order-confirmation"; orderNumber: string; orderId: string }
   | { type: "wishlist" }
   | { type: "compare" }
-  | { type: "profile" }
-  | { type: "auth"; prefilledEmail?: string }
-  | { type: "admin" };
+  | { type: "profile"; id?: string }
+  | { type: "auth"; prefilledEmail?: string; authMode?: 'signin' | 'signup' | 'forgot-password' | 'reset-password' }
+  | { type: "admin"; role?: string };
 
 /**
  * Convert an AppView to a shareable browser URL path.
@@ -125,14 +125,21 @@ export function viewToUrl(view: AppView): string {
       const params = new URLSearchParams();
       if (view.search) params.set("search", view.search);
       if (view.sort) params.set("sort", view.sort);
+      
+      // Use category for slug, categoryId for UUID fallback
       if (view.categorySlug) params.set("category", view.categorySlug);
       else if (view.categoryId) params.set("categoryId", view.categoryId);
+      
       if (view.minPrice !== undefined) params.set("minPrice", String(view.minPrice));
       if (view.maxPrice !== undefined) params.set("maxPrice", String(view.maxPrice));
       const qs = params.toString();
       return `/products${qs ? `?${qs}` : ""}`;
     }
     case "product-detail":
+      if (view.categorySlug && view.productSlug) {
+        return `/products?category=${encodeURIComponent(view.categorySlug)}/${encodeURIComponent(view.productSlug)}`;
+      }
+      // Fallbacks
       return view.productSlug
         ? `/product/${encodeURIComponent(view.productSlug)}`
         : `/product/${encodeURIComponent(view.productId)}`;
@@ -142,22 +149,40 @@ export function viewToUrl(view: AppView): string {
       return "/checkout";
     case "orders":
       return "/orders";
-    case "order-detail":
-      return `/order/${encodeURIComponent(view.orderId)}`;
-    case "order-confirmation":
-      return `/order/${encodeURIComponent(view.orderId)}/confirmed`;
+    case "order-detail": {
+      let orderId = (view as any).orderNumber || view.orderId;
+      // If it's a UUID, convert it to the human-readable SS- format for the URL
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(orderId)) {
+        orderId = 'SS-' + orderId.slice(0, 8).toUpperCase();
+      }
+      return `/my-order/${encodeURIComponent(orderId)}`;
+    }
+    case "order-confirmation": {
+      let orderId = view.orderNumber || view.orderId;
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(orderId)) {
+        orderId = 'SS-' + orderId.slice(0, 8).toUpperCase();
+      }
+      return `/my-order/${encodeURIComponent(orderId)}/confirmed`;
+    }
     case "wishlist":
       return "/wishlist";
     case "compare":
       return "/compare";
     case "profile":
-      return "/profile";
-    case "auth":
+      return view.id ? `/profile?id=${encodeURIComponent(view.id)}` : "/profile";
+    case "auth": {
+      const base = "/auth";
+      if (view.authMode) {
+        return `${base}/${view.authMode}${view.prefilledEmail ? `?email=${encodeURIComponent(view.prefilledEmail)}` : ""}`;
+      }
       return view.prefilledEmail
-        ? `/auth?email=${encodeURIComponent(view.prefilledEmail)}`
-        : "/auth";
+        ? `${base}?email=${encodeURIComponent(view.prefilledEmail)}`
+        : base;
+    }
     case "admin":
-      return "/admin";
+      return view.role?.toLowerCase() === "manager" ? "/manager" : "/admin";
     default:
       return "/";
   }
@@ -180,11 +205,23 @@ export function urlToView(pathname: string, search: string): AppView {
     const view: AppView = { type: "products" };
     if (qs.get("search")) view.search = qs.get("search")!;
     if (qs.get("sort")) view.sort = qs.get("sort")!;
-    if (qs.get("category")) {
-      view.categorySlug = qs.get("category")!;
-    } else if (qs.get("categoryId")) {
-      view.categoryId = qs.get("categoryId")!;
+    
+    // Support both 'category' and 'categoryId' for slugs and IDs
+    const cat = qs.get("category") || qs.get("categoryId");
+    if (cat) {
+      if (cat.includes("/")) {
+        const [categorySlug, productSlug] = cat.split("/");
+        return { type: "product-detail", productId: "", productSlug, categorySlug };
+      }
+      // If it looks like a UUID, treat as ID, otherwise treat as slug
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidPattern.test(cat)) {
+        view.categoryId = cat;
+      } else {
+        view.categorySlug = cat;
+      }
     }
+    
     if (qs.get("minPrice")) view.minPrice = parseFloat(qs.get("minPrice")!);
     if (qs.get("maxPrice")) view.maxPrice = parseFloat(qs.get("maxPrice")!);
     return view;
@@ -216,9 +253,9 @@ export function urlToView(pathname: string, search: string): AppView {
   // Orders
   if (pathname === "/orders") return { type: "orders" };
 
-  // Order detail: /order/[orderId]
-  if (pathname.startsWith("/order/")) {
-    const parts = pathname.slice("/order/".length).split("/");
+  // Order detail: /my-order/[orderId]
+  if (pathname.startsWith("/my-order/")) {
+    const parts = pathname.slice("/my-order/".length).split("/");
     const orderId = decodeURIComponent(parts[0]);
     if (parts[1] === "confirmed") {
       return { type: "order-confirmation", orderId, orderNumber: "" };
@@ -233,26 +270,39 @@ export function urlToView(pathname: string, search: string): AppView {
   if (pathname === "/compare") return { type: "compare" };
 
   // Profile
-  if (pathname === "/profile") return { type: "profile" };
+  if (pathname === "/profile") {
+    const view: AppView = { type: "profile" };
+    if (qs.get("id")) view.id = qs.get("id")!;
+    return view;
+  }
 
   // Auth
-  if (pathname === "/auth") {
-    const view: AppView = { type: "auth" };
+  if (pathname.startsWith("/auth")) {
+    const view: AppView = { type: "auth", authMode: 'signin' };
+    const parts = pathname.split("/");
+    if (parts[2]) {
+      const mode = parts[2] as any;
+      if (['signin', 'signup', 'forgot-password', 'reset-password'].includes(mode)) {
+        view.authMode = mode;
+      }
+    }
     if (qs.get("email")) view.prefilledEmail = qs.get("email")!;
     return view;
   }
 
-  // Admin
-  if (pathname === "/admin") return { type: "admin" };
+  // Admin / Manager
+  if (pathname === "/admin") return { type: "admin", role: "admin" };
+  if (pathname === "/manager") return { type: "admin", role: "manager" };
 
   // Fallback to home
   return { type: "home" };
 }
 
 // Helper to parse JSON fields
-export function parseImages(imagesStr: string): ProductImage[] {
+export function parseImages(imagesStr: any): ProductImage[] {
+  if (Array.isArray(imagesStr)) return imagesStr;
   try {
-    const parsed = JSON.parse(imagesStr);
+    const parsed = typeof imagesStr === 'string' ? JSON.parse(imagesStr) : imagesStr;
     if (Array.isArray(parsed)) {
       return parsed.map((item: string | ProductImage) =>
         typeof item === "string" ? { url: item, alt: "" } : item
@@ -260,21 +310,26 @@ export function parseImages(imagesStr: string): ProductImage[] {
     }
     return [{ url: parsed, alt: "" }];
   } catch {
-    return [{ url: imagesStr, alt: "" }];
+    return [{ url: String(imagesStr), alt: "" }];
   }
 }
 
-export function parseItems<T>(itemsStr: string): T[] {
+export function parseItems<T>(itemsStr: any): T[] {
+  if (Array.isArray(itemsStr)) return itemsStr;
   try {
-    return JSON.parse(itemsStr);
+    return typeof itemsStr === 'string' ? JSON.parse(itemsStr) : [];
   } catch {
     return [];
   }
 }
 
-export function parseAddress(addressStr: string): ShippingAddress {
+export function parseAddress(addressStr: any): ShippingAddress {
+  if (typeof addressStr === 'object' && addressStr !== null) return addressStr;
   try {
-    return JSON.parse(addressStr);
+    return typeof addressStr === 'string' ? JSON.parse(addressStr) : {
+      firstName: "", lastName: "", email: "", address: "", city: "",
+      state: "", zipCode: "", country: "", phone: "",
+    };
   } catch {
     return {
       firstName: "",

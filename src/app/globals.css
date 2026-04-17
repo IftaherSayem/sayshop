@@ -122,7 +122,15 @@
   }
   html {
     overflow-x: hidden;
+    scrollbar-gutter: stable !important;
   }
+}
+
+/* Prevent Radix UI from causing layout shifts when Menus/Selects open in our custom scroll containers */
+body[data-scroll-locked], html[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+  --removed-body-scroll-bar-size: 0px !important;
 }
 
 /* Promo ticker marquee animation */
@@ -299,4 +307,65 @@ html {
   [role="button"]:focus-visible {
     @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-background;
   }
+}
+
+/* Force Premium Production Toasts */
+[data-sonner-toast] {
+  background: #021c15 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  padding-right: 48px !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important; /* Default Emerald */
+}
+
+/* Error Specific Style */
+[data-sonner-toast][data-type="error"] {
+  background: #1c0202 !important;
+  color: #f87171 !important; /* red-400 */
+  border: 1px solid rgba(248, 113, 113, 0.2) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-close-button] {
+  color: #f87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #f87171 !important;
+}
+
+/* Warning Specific Style */
+[data-sonner-toast][data-type="warning"] {
+  background: #1c1502 !important;
+  color: #fbbf24 !important; /* amber-400 */
+  border: 1px solid rgba(251, 191, 36, 0.2) !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  display: flex !important;
+  left: auto !important;
+  right: -10px !important;
+  top: -10px !important;
+  background: #18181b !important; /* Professional Zinc-900 */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  z-index: 100 !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: #000000 !important;
+  transform: scale(1.1) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-sonner-toast] [data-close-button] svg {
+  width: 12px !important;
+  height: 12px !important;
 }

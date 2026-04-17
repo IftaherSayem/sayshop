@@ -159,7 +159,7 @@ export function ProductQA({ productId }: ProductQAProps) {
             {/* Question */}
             <div className="flex items-start gap-3 py-4">
               <Avatar className="h-8 w-8 mt-0.5">
-                <AvatarFallback className="bg-orange-100 text-orange-600 text-xs font-semibold">
+                <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
                   {getInitials(item.askedBy)}
                 </AvatarFallback>
               </Avatar>
@@ -178,13 +178,13 @@ export function ProductQA({ productId }: ProductQAProps) {
             <div className="ml-11 rounded-lg bg-muted/50 border border-border/50 p-4">
               <div className="flex items-start gap-3">
                 <Avatar className="h-7 w-7 mt-0.5">
-                  <AvatarFallback className="bg-orange-500 text-white text-[10px] font-bold">
+                  <AvatarFallback className="bg-blue-600 text-white text-[10px] font-bold">
                     SS
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-medium text-sm text-orange-600 dark:text-orange-400">
+                    <span className="font-medium text-sm text-blue-700 dark:text-blue-400">
                       {item.answeredBy}
                     </span>
                   </div>
@@ -200,12 +200,12 @@ export function ProductQA({ productId }: ProductQAProps) {
                   onClick={() => handleHelpful(item.id)}
                   className={`inline-flex items-center gap-1.5 text-xs transition-colors rounded-md px-2 py-1 ${
                     helpfulSet.has(item.id)
-                      ? 'text-orange-500 cursor-default'
-                      : 'text-muted-foreground hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30'
+                      ? 'text-blue-600 cursor-default'
+                      : 'text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-orange-950/30'
                   }`}
                   disabled={helpfulSet.has(item.id)}
                 >
-                  <ThumbsUp className={`h-3.5 w-3.5 ${helpfulSet.has(item.id) ? 'fill-orange-500' : ''}`} />
+                  <ThumbsUp className={`h-3.5 w-3.5 ${helpfulSet.has(item.id) ? 'fill-blue-600' : ''}`} />
                   Helpful ({item.helpful})
                 </button>
               </div>
@@ -227,7 +227,7 @@ export function ProductQA({ productId }: ProductQAProps) {
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="w-full h-12 border-orange-500 text-orange-500 hover:bg-orange-50 hover:text-orange-600 gap-2"
+              className="w-full h-12 border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 gap-2"
             >
               <MessageCircleQuestion className="h-5 w-5" />
               Ask a Question
@@ -236,7 +236,7 @@ export function ProductQA({ productId }: ProductQAProps) {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <MessageCircleQuestion className="h-5 w-5 text-orange-500" />
+                <MessageCircleQuestion className="h-5 w-5 text-blue-600" />
                 Ask a Question
               </DialogTitle>
               <DialogDescription>
@@ -262,7 +262,7 @@ export function ProductQA({ productId }: ProductQAProps) {
                   Cancel
                 </Button>
                 <Button
-                  className="bg-orange-500 hover:bg-orange-600 text-white gap-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
                   onClick={handleSubmitQuestion}
                   disabled={submitting || !questionText.trim()}
                 >

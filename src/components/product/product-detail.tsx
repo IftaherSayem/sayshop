@@ -69,7 +69,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
 interface ProductDetailProps {
   productId: string;
@@ -179,7 +179,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
   const [verifiedStock, setVerifiedStock] = useState<number | null>(null);
 
   // Rating breakdown state
-  const [ratingBreakdown, setRatingBreakdown] = useState<Record<number, number>>({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
+  const [ratingBreakdown, setRatingBreakdown] = useState<Record<string | number, number>>({ 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 });
   const [breakdownLoaded, setBreakdownLoaded] = useState(false);
 
   // Lightbox state
@@ -230,7 +230,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
       : 0;
 
   // --- Variant helpers ---
-  const availableColors = getAvailableColors(product?.tags, product?.category?.name);
+  const availableColors = getAvailableColors(product?.tags ?? null, product?.category?.name);
 
   // Reset selected color when product changes
   useEffect(() => {
@@ -275,7 +275,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
     async function fetchRelated() {
       try {
         const params = new URLSearchParams({
-          categoryId: product.categoryId,
+          categoryId: product?.categoryId || '',
           limit: '10',
         });
         const res = await fetch(`/api/products?${params}`);
@@ -284,7 +284,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
         if (!cancelled) {
           setRelatedProducts(
             (data.products || []).filter(
-              (p: Product) => p.id !== product.id
+              (p: Product) => p.id !== product?.id
             )
           );
         }
@@ -304,7 +304,8 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
         page: String(page),
         limit: '5',
       });
-      const res = await fetch(`/api/products/${productId}/reviews?${params}`);
+      if (!product) return;
+      const res = await fetch(`/api/products/${product.id}/reviews?${params}`);
       if (!res.ok) return;
       const data = await res.json();
       setReviews(data.reviews || []);
@@ -320,7 +321,14 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
     } finally {
       setReviewsLoading(false);
     }
-  }, [productId]);
+  }, [product?.id]);
+
+  // --- Initial Reviews Fetch ---
+  useEffect(() => {
+    if (product?.id) {
+      fetchReviews(1);
+    }
+  }, [product?.id, fetchReviews]);
 
   // --- Scroll to reviews ---
   const scrollToReviews = () => {
@@ -560,28 +568,40 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
       sonnerToast.error('Please fill in all required fields: name, rating, and comment.');
       return;
     }
+    if (!product) return;
     setSubmittingReview(true);
     try {
-      const res = await fetch(`/api/products/${productId}/reviews`, {
+      const res = await fetch(`/api/products/${product.id}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reviewForm),
       });
+
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to submit review');
+        let errorData: any = { error: 'Failed' };
+        try {
+          errorData = await res.json();
+        } catch {
+          errorData = { error: `Server error (${res.status})` };
+        }
+        const customError = new Error(errorData.error || 'Failed to submit review') as any;
+        customError.details = errorData.details;
+        throw customError;
       }
+      
       sonnerToast.success('Review submitted! Thank you for your feedback.');
       setReviewForm({ userName: '', rating: 0, title: '', comment: '' });
       // Refresh product to get updated rating
-      const productRes = await fetch(`/api/products/${productId}`);
+      const productRes = await fetch(`/api/products/${product.id}`);
       if (productRes.ok) {
         const data = await productRes.json();
         setProduct(data);
       }
       fetchReviews(1);
-    } catch {
-      sonnerToast.error('Failed to submit review. Please try again later.');
+    } catch (err: any) {
+      console.error('Review submission error:', err)
+      const message = err.details || err.message || 'Product service is currently unavailable';
+      sonnerToast.error(`Review Failed: ${message}`);
     } finally {
       setSubmittingReview(false);
     }
@@ -619,7 +639,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                 rating: prev.rating === star ? 0 : star,
               }))
             }
-            className="p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+            className="p-0.5 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
           >
             <Star
               className={`h-6 w-6 ${
@@ -721,7 +741,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
             The product you are looking for does not exist or has been removed.
           </p>
           <Button
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setView({ type: 'home' })}
           >
             Go to Home
@@ -833,10 +853,10 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                     setSelectedImageIndex(index);
                     setLightboxIndex(index);
                   }}
-                  className={`relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                  className={`relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                     index === selectedImageIndex
-                      ? 'border-orange-500 ring-2 ring-orange-500/30'
-                      : 'border-border hover:border-orange-300'
+                      ? 'border-blue-600 ring-2 ring-blue-600/30'
+                      : 'border-border hover:border-blue-300'
                   }`}
                 >
                   <Image
@@ -868,12 +888,12 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
 
           {/* Rating */}
           <button
-            className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+            className="flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             onClick={scrollToReviews}
           >
             {renderStars(product.rating, 'h-4 w-4')}
             <span className="text-sm font-medium">{product.rating}</span>
-            <span className="text-sm text-muted-foreground group-hover:text-orange-500 transition-colors">
+            <span className="text-sm text-muted-foreground group-hover:text-blue-600 transition-colors">
               ({product.reviewCount} review{product.reviewCount !== 1 ? 's' : ''})
             </span>
           </button>
@@ -969,14 +989,14 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                   key={color.name}
                   type="button"
                   onClick={() => setSelectedColor(color.name)}
-                  className="relative h-8 w-8 rounded-full border-2 border-muted-foreground/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                  className="relative h-8 w-8 rounded-full border-2 border-muted-foreground/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                   style={{ backgroundColor: color.hex }}
                   whileTap={{ scale: 0.9 }}
                 >
                   {selectedColor === color.name && (
                     <motion.div
                       layoutId="colorRing"
-                      className="absolute inset-0 rounded-full ring-2 ring-orange-500 ring-offset-2"
+                      className="absolute inset-0 rounded-full ring-2 ring-blue-600 ring-offset-2"
                       initial={false}
                       animate={{ scale: 1.15 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -985,7 +1005,13 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                 </motion.button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">{availableColors.find(c => c.name === selectedColor)?.name.charAt(0).toUpperCase() + availableColors.find(c => c.name === selectedColor)?.name.slice(1)}</p>
+            <p className="text-xs text-muted-foreground">
+              {(() => {
+                const color = availableColors.find(c => c.name === selectedColor)
+                if (!color) return ''
+                return color.name.charAt(0).toUpperCase() + color.name.slice(1)
+              })()}
+            </p>
           </div>
 
           {/* Size Selector */}
@@ -995,7 +1021,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
               <button
                 type="button"
                 onClick={() => setSizeGuideOpen(true)}
-                className="inline-flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
               >
                 <Ruler className="h-3.5 w-3.5" />
                 Size Guide
@@ -1007,10 +1033,10 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                   key={size}
                   type="button"
                   onClick={() => setSelectedSize(size)}
-                  className={`h-9 min-w-[2.5rem] rounded-md border text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                  className={`h-9 min-w-[2.5rem] rounded-md border text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                     selectedSize === size
-                      ? 'bg-orange-500 text-white border-orange-500'
-                      : 'border-border hover:border-orange-300 text-foreground'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-border hover:border-blue-300 text-foreground'
                   }`}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -1022,7 +1048,11 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
 
           {/* Selected Options Summary */}
           <p className="text-xs text-muted-foreground">
-            Selected: {availableColors.find(c => c.name === selectedColor)?.name.charAt(0).toUpperCase() + availableColors.find(c => c.name === selectedColor)?.name.slice(1)} · Size {selectedSize}
+            Selected: {(() => {
+              const color = availableColors.find(c => c.name === selectedColor)
+              const colorName = color ? color.name.charAt(0).toUpperCase() + color.name.slice(1) : ''
+              return `${colorName} · Size ${selectedSize}`
+            })()}
           </p>
 
           {/* Key Features Badges */}
@@ -1054,16 +1084,17 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {effectiveStock > 0 ? (
               <>
                 <motion.div
+                  className="flex-1"
                   initial={{ scale: 0.95 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 >
                   <Button
-                    className="h-12 bg-orange-500 hover:bg-orange-600 text-white text-base font-semibold"
+                    className="h-12 w-full bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold"
                     onClick={handleAddToCart}
                     disabled={product.stock === 0 || stockVerifying}
                   >
@@ -1094,7 +1125,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                 </motion.div>
                 <Button
                   variant="outline"
-                  className="h-12 border-orange-500 text-orange-500 hover:bg-orange-50 text-base font-semibold"
+                  className="h-12 flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-base font-semibold"
                   onClick={handleBuyNow}
                 >
                   Buy Now
@@ -1117,7 +1148,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
               >
                 <Button
                   variant="outline"
-                  className="h-12 border-orange-500 text-orange-500 hover:bg-orange-50 hover:text-orange-600 text-base font-semibold"
+                  className="h-12 border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 text-base font-semibold"
                   onClick={handleNotifyMe}
                 >
                   <Bell className="h-5 w-5 mr-2" />
@@ -1361,7 +1392,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <MessageCircleQuestion className="h-5 w-5 text-orange-500" />
+                  <MessageCircleQuestion className="h-5 w-5 text-blue-600" />
                   <h3 className="text-lg font-semibold">Questions & Answers</h3>
                 </div>
                 <ProductQA productId={product.id} />
@@ -1499,7 +1530,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                   </div>
 
                   <Button
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={handleSubmitReview}
                     disabled={submittingReview}
                   >
@@ -1543,8 +1574,8 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
-                            {review.userName.charAt(0).toUpperCase()}
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm">
+                            {(review.userName || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">

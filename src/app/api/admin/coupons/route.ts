@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase/server'
 import { verifyAdmin } from '../_auth'
 import { toCamel } from '@/lib/supabase/helpers'
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (error) return error
 
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseAdminClient()
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')))
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   if (error) return error
 
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseAdminClient()
     const body = await request.json()
     const {
       code,
@@ -71,6 +71,8 @@ export async function POST(request: NextRequest) {
       usageLimit,
       isActive,
       expiresAt,
+      targetUserIds,
+      usageLimitPerUser,
     } = body
 
     if (!code || !discountType || discountValue === undefined) {
@@ -110,11 +112,14 @@ export async function POST(request: NextRequest) {
       code: upperCode,
       discount_type: discountType,
       discount_value: discountVal,
-      min_order: minOrder != null ? parseFloat(minOrder) : null,
-      usage_limit: usageLimit != null ? parseInt(usageLimit) : null,
+      min_order: (minOrder && minOrder !== "") ? parseFloat(minOrder) : null,
+      usage_limit: (usageLimit && usageLimit !== "") ? parseInt(usageLimit) : null,
+      product_id: body.productId && body.productId !== 'none' ? body.productId : null,
+      target_user_ids: Array.isArray(targetUserIds) && targetUserIds.length > 0 ? targetUserIds.filter(id => id !== 'none') : null,
+      usage_limit_per_user: (usageLimitPerUser && usageLimitPerUser !== "") ? parseInt(usageLimitPerUser) : null,
       used_count: 0,
-      is_active: isActive !== false,
-      expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+      is_active: isActive === undefined ? true : Boolean(isActive),
+      expires_at: (expiresAt && expiresAt !== "") ? new Date(expiresAt).toISOString() : null,
     }
 
     const { data: coupon, error: insertError } = await supabase
@@ -142,7 +147,7 @@ export async function PUT(request: NextRequest) {
   if (error) return error
 
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseAdminClient()
     const body = await request.json()
     const { id, ...data } = body
 
@@ -189,15 +194,31 @@ export async function PUT(request: NextRequest) {
     }
 
     if (data.minOrder !== undefined) {
-      updateData.min_order = data.minOrder !== null ? parseFloat(data.minOrder) : null
+      updateData.min_order = (data.minOrder && data.minOrder !== "") ? parseFloat(data.minOrder) : null
     }
 
     if (data.usageLimit !== undefined) {
-      updateData.usage_limit = data.usageLimit !== null ? parseInt(data.usageLimit) : null
+      updateData.usage_limit = (data.usageLimit && data.usageLimit !== "") ? parseInt(data.usageLimit) : null
+    }
+
+    if (data.productId !== undefined) {
+      updateData.product_id = data.productId === 'none' ? null : data.productId
+    }
+
+    if (data.expiresAt !== undefined) {
+      updateData.expires_at = (data.expiresAt && data.expiresAt !== "") ? new Date(data.expiresAt).toISOString() : null
+    }
+
+    if (data.targetUserIds !== undefined) {
+      updateData.target_user_ids = Array.isArray(data.targetUserIds) && data.targetUserIds.length > 0 ? data.targetUserIds.filter((id: string) => id !== 'none') : null
+    }
+
+    if (data.usageLimitPerUser !== undefined) {
+      updateData.usage_limit_per_user = (data.usageLimitPerUser && data.usageLimitPerUser !== "") ? parseInt(data.usageLimitPerUser) : null
     }
 
     if (data.isActive !== undefined) {
-      updateData.is_active = !!data.isActive
+      updateData.is_active = Boolean(data.isActive)
     }
 
     if (data.expiresAt !== undefined) {
@@ -217,13 +238,16 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) {
       console.error('Update coupon error:', updateError)
-      return NextResponse.json({ error: 'Failed to update coupon', details: updateError.message }, { status: 500 })
+      return NextResponse.json({ 
+        error: updateError.message || 'Failed to update coupon',
+        details: updateError.code
+      }, { status: 500 })
     }
 
     return NextResponse.json(toCamel(coupon as Record<string, unknown>))
-  } catch (e) {
+  } catch (e: any) {
     console.error('Update coupon error:', e)
-    return NextResponse.json({ error: 'Failed to update coupon' }, { status: 500 })
+    return NextResponse.json({ error: e?.message || 'Failed to update coupon' }, { status: 500 })
   }
 }
 
@@ -234,7 +258,7 @@ export async function DELETE(request: NextRequest) {
   if (error) return error
 
   try {
-    const supabase = await createSupabaseServerClient()
+    const supabase = await createSupabaseAdminClient()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

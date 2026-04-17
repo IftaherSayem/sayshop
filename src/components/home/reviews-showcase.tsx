@@ -97,9 +97,9 @@ export function ReviewsShowcase() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-orange-400 to-orange-600" />
+          <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-blue-400 to-blue-700" />
           <div className="flex items-center gap-2 mb-1">
-            <MessageSquare className="h-5 w-5 text-orange-500" />
+            <MessageSquare className="h-5 w-5 text-blue-600" />
             <h2 className="text-2xl md:text-3xl font-bold">What Customers Are Saying</h2>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -171,8 +171,8 @@ export function ReviewsShowcase() {
                     {/* Reviewer info */}
                     <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                          <span className="text-xs font-bold text-orange-600">
+                        <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-orange-900/30 flex items-center justify-center">
+                          <span className="text-xs font-bold text-blue-700">
                             {review.userName.charAt(0).toUpperCase()}
                           </span>
                         </div>

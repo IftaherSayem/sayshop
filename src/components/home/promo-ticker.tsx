@@ -26,7 +26,7 @@ export function PromoTicker() {
   const tripled = [...messages, ...messages, ...messages];
 
   return (
-    <div className="w-full overflow-hidden bg-orange-50 dark:bg-orange-950/50 border-y border-orange-200/50 dark:border-orange-800/50">
+    <div className="w-full overflow-hidden bg-blue-50 dark:bg-orange-950/50 border-y border-blue-200/50 dark:border-orange-800/50">
       <div
         className="promo-ticker-track flex whitespace-nowrap py-3 will-change-transform"
         style={{ opacity: mounted ? 1 : 0, transition: 'opacity 0.3s ease' }}
@@ -34,10 +34,10 @@ export function PromoTicker() {
         {tripled.map((msg, i) => (
           <span
             key={`promo-${i}`}
-            className="inline-flex items-center mx-8 text-sm font-medium text-orange-700 dark:text-orange-300 select-none"
+            className="inline-flex items-center mx-8 text-sm font-medium text-orange-700 dark:text-blue-300 select-none"
           >
             {msg}
-            <span className="ml-8 text-orange-400 dark:text-orange-600">•</span>
+            <span className="ml-8 text-blue-400 dark:text-blue-700">•</span>
           </span>
         ))}
       </div>

@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag } from 'lucide-react';
+import { useUIStore } from '@/stores/ui-store';
 
 export function LoadingScreen() {
-  const [visible, setVisible] = useState(true);
+  const initialLoadDone = useUIStore((s) => s.initialLoadDone);
+  const setInitialLoadDone = useUIStore((s) => s.setInitialLoadDone);
+  const [visible, setVisible] = useState(!initialLoadDone);
   const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -22,14 +25,17 @@ export function LoadingScreen() {
     const fadeTimer = setTimeout(() => {
       setProgress(100);
       setFadeOut(true);
-      setTimeout(() => setVisible(false), 400);
+      setTimeout(() => {
+        setVisible(false);
+        setInitialLoadDone(true);
+      }, 400);
     }, 1500);
 
     return () => {
       clearInterval(interval);
       clearTimeout(fadeTimer);
     };
-  }, []);
+  }, [setInitialLoadDone]);
 
   return (
     <AnimatePresence>
@@ -49,7 +55,7 @@ export function LoadingScreen() {
           >
             {/* Logo */}
             <motion.div
-              className="flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-xl shadow-orange-500/30"
+              className="flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-700 shadow-xl shadow-blue-600/30"
               animate={{ rotate: [0, 0, 0, -2, 2, 0] }}
               transition={{ duration: 2, delay: 0.3, ease: 'easeInOut' }}
             >
@@ -63,7 +69,7 @@ export function LoadingScreen() {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="flex items-center gap-1"
             >
-              <span className="text-3xl font-bold text-orange-500">Say</span>
+              <span className="text-3xl font-bold text-blue-600">Say</span>
               <span className="text-3xl font-bold text-foreground">Shop</span>
             </motion.div>
 
@@ -76,7 +82,7 @@ export function LoadingScreen() {
             >
               <div className="h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-muted">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600"
+                  className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-700"
                   initial={{ width: '0%' }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}

@@ -62,6 +62,22 @@ export function CategoryGrid() {
     );
   }
 
+  // ── High Performance: Image Mapper ──
+  const getCategoryImage = (cat: CategoryWithCount) => {
+    const slug = cat.slug.toLowerCase()
+    const name = cat.name.toLowerCase()
+    
+    if (slug.includes('electron') || name.includes('electron')) return '/images/categories/electronics.png'
+    if (slug.includes('computer') || name.includes('computer')) return '/images/categories/computers.png'
+    if (slug.includes('gaming') || name.includes('gaming')) return '/images/products/mechanical-keyboard.png'
+    if (slug.includes('audio') || name.includes('audio')) return '/images/products/headphones.png'
+    if (slug.includes('photo') || name.includes('photo')) return '/images/products/camera.png'
+    if (slug.includes('wearable') || name.includes('wearable')) return '/images/products/premium-smartwatch.png'
+    if (slug.includes('access') || name.includes('access')) return '/images/products/smart-speaker.png'
+    
+    return cat.image || "/images/products/headphones.png"
+  }
+
   return (
     <section className="py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4">
@@ -86,14 +102,14 @@ export function CategoryGrid() {
           {categories.map((category) => (
             <motion.div key={category.id} variants={itemVariants}>
               <Card
-                className="group cursor-pointer overflow-hidden border border-border/50 py-0 gap-0 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 hover:scale-[1.03] hover:border-orange-300 sm:hover:-translate-y-1 hover:ring-0 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="group cursor-pointer overflow-hidden border border-border/50 py-0 gap-0 transition-all duration-300 hover:shadow-xl hover:shadow-blue-600/10 hover:scale-[1.03] hover:border-blue-300 sm:hover:-translate-y-1 hover:ring-0 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 onClick={() =>
                   setView({ type: "products", categoryId: category.id })
                 }
               >
                 <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                   <Image
-                    src={category.image || "/images/products/headphones.png"}
+                    src={getCategoryImage(category)}
                     alt={category.name}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -105,7 +121,7 @@ export function CategoryGrid() {
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.3, delay: 0.1 }}
-                    className="absolute top-2 right-2 z-10 bg-orange-500 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-md"
+                    className="absolute top-2 right-2 z-10 bg-blue-600 text-white text-xs font-medium px-2 py-0.5 rounded-full shadow-md"
                   >
                     {category.productCount} items
                   </motion.span>
@@ -120,14 +136,14 @@ export function CategoryGrid() {
                       {category.productCount} products
                     </p>
                     {/* Shop Now text that fades in */}
-                    <span className="inline-block mt-2 text-xs font-medium text-orange-300 opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                    <span className="inline-block mt-2 text-xs font-medium text-blue-300 opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 delay-100">
                       Shop Now →
                     </span>
                   </div>
                 </div>
                 {/* Category name below (always visible, hidden on hover for desktop) */}
                 <div className="p-3 text-center sm:group-hover:opacity-0 transition-opacity duration-300">
-                  <h3 className="font-semibold text-sm group-hover:text-orange-600 transition-colors">
+                  <h3 className="font-semibold text-sm group-hover:text-blue-700 transition-colors">
                     {category.name}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">

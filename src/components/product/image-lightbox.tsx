@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
 interface ImageLightboxProps {
   images: Array<{ url: string; alt: string }>;
@@ -103,7 +103,7 @@ export function ImageLightbox({
     touchEndX.current = null;
   };
 
-  const slideVariants = {
+  const slideVariants: Variants = {
     enter: (dir: number) => ({
       x: dir > 0 ? 300 : -300,
       opacity: 0,
@@ -142,7 +142,7 @@ export function ImageLightbox({
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             aria-label="Close lightbox"
           >
             <X className="h-5 w-5" />
@@ -228,9 +228,9 @@ export function ImageLightbox({
                       setDirection(index > currentIndex ? 1 : -1);
                       setCurrentIndex(index);
                     }}
-                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
                       index === currentIndex
-                        ? 'border-orange-500 ring-2 ring-orange-500/30'
+                        ? 'border-blue-600 ring-2 ring-blue-600/30'
                         : 'border-white/20 hover:border-white/50 opacity-60 hover:opacity-100'
                     }`}
                   >

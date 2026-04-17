@@ -153,7 +153,7 @@ export function AnnouncementBanner() {
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className="relative z-50 overflow-hidden"
         >
-          <div className="relative bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 text-white">
+          <div className="relative bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 text-white">
             {/* Content */}
             <div className="flex items-center justify-center px-4 h-11 sm:h-12 relative z-10">
               {/* Dot indicators - left side */}

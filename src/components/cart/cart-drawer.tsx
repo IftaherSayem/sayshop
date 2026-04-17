@@ -145,7 +145,7 @@ export function CartDrawer() {
             )}
           </SheetTitle>
           {/* Gradient accent bar */}
-          <div className="h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-full mt-2" />
+          <div className="h-1 bg-gradient-to-r from-blue-400 via-blue-600 to-blue-700 rounded-full mt-2" />
         </SheetHeader>
 
         {/* Empty State */}
@@ -181,7 +181,7 @@ export function CartDrawer() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.35, ease: 'easeOut' }}
               >
-                <Button onClick={handleStartShopping} className="mt-2 bg-orange-500 text-white hover:bg-orange-600">
+                <Button onClick={handleStartShopping} className="mt-2 bg-blue-600 text-white hover:bg-blue-700">
                   Start Shopping
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -202,7 +202,7 @@ export function CartDrawer() {
                     exit={{ opacity: 0, x: -20, height: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="flex gap-3 border-l-2 border-orange-500 p-4">
+                    <div className="flex gap-3 border-l-2 border-blue-600 p-4">
                       {/* Product Image */}
                       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
                         <img
@@ -238,7 +238,7 @@ export function CartDrawer() {
                           }
                           return null
                         })()}
-                        <p className="text-sm font-semibold text-orange-500">
+                        <p className="text-sm font-semibold text-blue-600">
                           {formatPrice(item.price)}
                         </p>
 
@@ -345,7 +345,7 @@ export function CartDrawer() {
                   View Cart
                 </Button>
                 <Button
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-orange-700 text-white"
                   onClick={handleCheckout}
                 >
                   Checkout

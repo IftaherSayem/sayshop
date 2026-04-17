@@ -60,11 +60,13 @@ export async function GET(request: NextRequest) {
     let transformed = (users || []).map((u: Record<string, unknown>) => {
       const profile = u.profiles as Record<string, unknown> | null
       const roleObj = u.roles as Record<string, unknown> | null
+      const email = (u.email as string || '').toLowerCase()
+      
       return {
         id: u.id,
         email: u.email,
         name: profile?.full_name || null,
-        role: (roleObj?.name || 'customer').toUpperCase(),
+        role: email === 'admin@sayshop.com' ? 'ADMIN' : String(roleObj?.name || 'customer').toUpperCase(),
         isVerified: u.is_verified ?? false,
         isBlocked: u.is_blocked ?? false,
         lastLogin: u.last_login || null,
@@ -77,8 +79,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       const lowerSearch = search.toLowerCase()
       transformed = transformed.filter((u) =>
-        (u.name?.toLowerCase() || '').includes(lowerSearch) ||
-        (u.email?.toLowerCase() || '').includes(lowerSearch)
+        (String(u.name || '')).toLowerCase().includes(lowerSearch) ||
+        (String(u.email || '')).toLowerCase().includes(lowerSearch)
       )
     }
 
@@ -114,6 +116,32 @@ export async function PUT(request: NextRequest) {
     }
     if (id === user!.id && isBlocked === true) {
       return NextResponse.json({ error: 'Cannot block yourself' }, { status: 400 })
+    }
+
+    // 🛡️ ROLE HIERARCHY SECURITY CHECK
+    const currentStaffRole = String((user as any)!.role || 'customer').toLowerCase()
+    
+    // Fetch the target user's CURRENT role before any update
+    const { data: targetUserOrig } = await supabase
+      .from('users')
+      .select('roles(name)')
+      .eq('id', id)
+      .maybeSingle()
+    
+    const targetRoleOrig = ((targetUserOrig?.roles as any)?.name || 'customer').toLowerCase()
+
+    if (currentStaffRole === 'manager') {
+      // 1. Managers cannot touch Admins or other Managers
+      if (['admin', 'manager'].includes(targetRoleOrig)) {
+        return NextResponse.json({ error: 'Permission Denied: Managers cannot modify other privileged accounts' }, { status: 403 })
+      }
+      // 2. Managers cannot elevate someone to Admin status
+      if (role && normalizeRole(role) === 'admin') {
+        return NextResponse.json({ error: 'Permission Denied: Only Admins can create other Admins' }, { status: 403 })
+      }
+    } else if (currentStaffRole === 'support') {
+      // 3. Support cannot modify any staff roles
+      return NextResponse.json({ error: 'Permission Denied: Support accounts cannot modify permissions' }, { status: 403 })
     }
 
     // Validate role if provided
@@ -182,8 +210,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found after update' }, { status: 404 })
     }
 
-    const profile = updatedUser.profiles as Record<string, unknown> | null
-    const roleObj = updatedUser.roles as Record<string, unknown> | null
+    const profile = (Array.isArray(updatedUser.profiles) ? updatedUser.profiles[0] : updatedUser.profiles) as unknown as Record<string, unknown> | null
+    const roleObj = (Array.isArray(updatedUser.roles) ? updatedUser.roles[0] : updatedUser.roles) as unknown as Record<string, unknown> | null
 
     return NextResponse.json({
       id: updatedUser.id,
@@ -191,7 +219,7 @@ export async function PUT(request: NextRequest) {
       name: profile?.full_name || null,
       phone: profile?.phone || null,
       avatar: profile?.avatar || null,
-      role: (roleObj?.name || 'customer').toUpperCase(),
+      role: String(roleObj?.name || 'customer').toUpperCase(),
       isVerified: updatedUser.is_verified ?? false,
       isBlocked: updatedUser.is_blocked ?? false,
       lastLogin: updatedUser.last_login || null,

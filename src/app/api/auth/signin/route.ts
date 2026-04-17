@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     // ── Find user by email ──────────────────────────────────
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, email, password_hash, is_blocked, is_verified, deleted_at')
+      .select('id, email, password_hash, role_id, is_blocked, is_verified, deleted_at')
       .eq('email', email.toLowerCase())
       .maybeSingle()
 
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Check email verification ────────────────────────────
+    // ── Check email verification (Original Signup Gate) ──────
     if (!user.is_verified) {
       return NextResponse.json(
         {
@@ -163,61 +163,107 @@ export async function POST(request: NextRequest) {
       .update({ last_login: new Date().toISOString() })
       .eq('id', user.id)
 
-    // ── Destroy old session if cookie present ───────────────
-    const oldSessionCookie = request.cookies.get(SESSION_COOKIE_NAME)
-    if (oldSessionCookie?.value) {
-      await destroySession(oldSessionCookie.value)
-    }
-
-    // ── Create new session ──────────────────────────────────
-    const clientIp = getClientIp(request)
-    const userAgent = request.headers.get('user-agent') || undefined
-    const token = await createSession(user.id, clientIp, userAgent)
-
-    // ── Fetch profile for name ──────────────────────────────
+    // ── Check if 2FA is enabled in profile settings ─────────
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name, phone')
+      .select('address')
       .eq('user_id', user.id)
-      .maybeSingle()
+      .maybeSingle();
 
-    // ── Fetch role name ─────────────────────────────────────
-    const { data: roleData } = await supabase
-      .from('roles')
-      .select('name')
-      .eq('id', user.role_id)
-      .maybeSingle()
+    const settings = (profile?.address as any)?.settings || {};
+    const is2FAEnabled = settings.twoFactorEnabled === true;
 
-    const roleName = roleData?.name ?? 'customer'
+    if (!is2FAEnabled) {
+      console.log(`[signin] 2FA is disabled for ${user.email}. Logging in directly.`);
+      
+      const { createSession, getSessionCookieOptions } = await import('@/lib/auth');
+      const token = await createSession(
+        user.id,
+        request.headers.get('x-forwarded-for') || undefined,
+        request.headers.get('user-agent') || undefined
+      );
 
-    const userResponse = {
-      id: user.id,
-      email: user.email,
-      name: profile?.full_name || user.email,
-      role: roleName.toUpperCase(),
-      phone: profile?.phone || null,
+      const response = NextResponse.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+        },
+        requires2FA: false
+      });
+
+      const cookieOptions = getSessionCookieOptions();
+      response.cookies.set(cookieOptions.name, token, {
+        ...cookieOptions,
+        sameSite: 'lax',
+      });
+
+      return response;
     }
 
-    // ── Log admin login ─────────────────────────────────────
-    if (roleName === 'admin') {
-      console.log(
-        `[ADMIN LOGIN] User "${user.email}" logged in from IP: ${clientIp}`
-      )
+    // ── 2FA is enabled, proceed with dispatching code ────────
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+
+    await supabase
+      .from('users')
+      .update({
+        verification_code: verificationCode,
+        verification_code_expires_at: expiresAt,
+      })
+      .eq('id', user.id)
+
+    // ── Dispatch Email via Resend ───────────────────────────
+    if (process.env.RESEND_API_KEY) {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      console.log(`[Resend] Attempting to send login 2FA to: ${user.email.toLowerCase()}`);
+      const { error: emailError } = await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: user.email.toLowerCase(),
+        subject: 'Your SayShop Login Authentication Code',
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #2563EB; padding: 24px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
+            </div>
+            <div style="padding: 32px; text-align: center; background-color: #ffffff;">
+              <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">2FA Login Attempt</h2>
+              <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
+                We detected a login attempt using your email. Please enter the following secure 6-digit code to securely complete your login. This code will expire in 10 minutes.
+              </p>
+              <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1D4ED8; margin-bottom: 24px;">
+                ${verificationCode}
+              </div>
+              <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
+                If this wasn't you, your password may be compromised. Please consider changing it immediately.
+              </p>
+            </div>
+          </div>
+        `
+      });
+
+      if (emailError) {
+        console.error('[signin] Send error detail:', JSON.stringify(emailError, null, 2));
+        return NextResponse.json(
+          { error: `2FA Email Failed: ${emailError.message || 'Unknown Reason'}` },
+          { status: 500 }
+        )
+      } else {
+        console.log(`[Resend] Successfully dispatched 2FA email to ${user.email}`);
+      }
+    } else {
+      console.log(`[Development Leak] 2FA Code for ${user.email}: ${verificationCode}`);
     }
 
-    // ── Set session cookie ──────────────────────────────────
-    const cookieOpts = getSessionCookieOptions()
-    const response = NextResponse.json({ user: userResponse })
+    // Return the signal to transition without disclosing the explicit code.
+    return NextResponse.json({
+      error: 'Please verify your identity. A verification code was sent to your email.',
+      requiresVerification: true,
+      email: user.email
+    }, { status: 403 })
 
-    response.cookies.set(cookieOpts.name, token, {
-      httpOnly: cookieOpts.httpOnly,
-      secure: cookieOpts.secure,
-      sameSite: cookieOpts.sameSite,
-      path: cookieOpts.path,
-      maxAge: cookieOpts.maxAge,
-    })
-
-    return response
   } catch (err) {
     console.error('[signin] Unexpected error:', err)
     return NextResponse.json(

@@ -50,9 +50,12 @@ import {
   Smartphone,
   Banknote,
   Lock,
+  Plus,
+  Star,
 } from "lucide-react"
 import { toast } from "sonner"
 import { BkashLogo, NagadLogo, RocketLogo, GPayLogo } from "@/components/payment/payment-logos"
+import { REWARDS_CONFIG, calculatePointsEarned, pointsToValue } from "@/lib/rewards"
 
 // ── Zod Schemas ────────────────────────────────────────────────────
 const shippingSchema = z.object({
@@ -96,7 +99,7 @@ export function CheckoutPage() {
   const getSubtotal = useCartStore((s) => s.getSubtotal)
   const getShipping = useCartStore((s) => s.getShipping)
   const setView = useUIStore((s) => s.setView)
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
 
   // Wait for Zustand persist to hydrate before checking auth
   const hydrated = useAuthStore((s) => s._hydrated)
@@ -108,18 +111,7 @@ export function CheckoutPage() {
     }
   }, [hydrated, isAuthenticated, setView])
 
-  const [step, setStep] = useState<CheckoutStep>(1)
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bkash")
-  const [placingOrder, setPlacingOrder] = useState(false)
-  const [giftWrap, setGiftWrap] = useState(false)
-  const [giftMessage, setGiftMessage] = useState("")
-  const GIFT_MESSAGE_MAX = 200
-  const [orderNotes, setOrderNotes] = useState("")
-  const [saveAddress, setSaveAddress] = useState(false)
-  const [prevStep, setPrevStep] = useState<CheckoutStep>(1)
-  const [paymentPhone, setPaymentPhone] = useState("")
-
-  // ── Subtotal & derived values (must be before coupon handler) ─
+  // ── Financial Calculations ─────────────────────────────────
   const subtotal = getSubtotal()
   const shipping = getShipping()
   const tax = subtotal * 0.08
@@ -128,7 +120,9 @@ export function CheckoutPage() {
   interface CouponData {
     valid: boolean
     code: string
-    discount: number
+    discountAmount: number
+    discountType: 'fixed' | 'percent'
+    discountValue: number
     minOrder?: number
     message?: string
   }
@@ -136,6 +130,87 @@ export function CheckoutPage() {
   const [couponData, setCouponData] = useState<CouponData | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState("")
+  const couponDiscount = couponData?.discountAmount || 0
+
+  const [step, setStep] = useState<CheckoutStep>(1)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bkash")
+  const [placingOrder, setPlacingOrder] = useState(false)
+  const [giftWrap, setGiftWrap] = useState(false)
+  const [giftMessage, setGiftMessage] = useState("")
+  const GIFT_MESSAGE_MAX = 200
+  const [orderNotes, setOrderNotes] = useState("")
+  const [saveAddress, setSaveAddress] = useState(false)
+  const [paymentPhone, setPaymentPhone] = useState("")
+  const [prevStep, setPrevStep] = useState<CheckoutStep>(1)
+
+  // ── Rewards State ─────────────────────────────────────────────
+  const [redeemRewards, setRedeemRewards] = useState(false)
+  const [availablePoints, setAvailablePoints] = useState(0)
+
+  // ── Address State (Saved Profiles) ──────────────────────────
+  interface ProfileAddress {
+    id: string
+    label: string
+    fullName: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+    phone: string
+    isDefault: boolean
+  }
+  const [savedAddresses, setSavedAddresses] = useState<ProfileAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">("new")
+  const [loadingProfile, setLoadingProfile] = useState(false)
+
+  // Fetch Saved Addresses
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const fetchProfile = async () => {
+      setLoadingProfile(true)
+      try {
+        const res = await fetch("/api/user/profile")
+        if (res.ok) {
+          const data = await res.json()
+          const profile = data.user
+          setAvailablePoints(profile.points || 0)
+          const addrs = profile.address?.addresses || []
+          setSavedAddresses(addrs)
+          
+          // Auto-select default address if it exists
+          const defaultAddr = addrs.find((a: ProfileAddress) => a.isDefault)
+          if (defaultAddr) {
+            setSelectedAddressId(defaultAddr.id)
+            syncFormWithAddress(defaultAddr)
+          } else if (addrs.length > 0) {
+            setSelectedAddressId(addrs[0].id)
+            syncFormWithAddress(addrs[0])
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch saved addresses:", err)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+    fetchProfile()
+  }, [isAuthenticated])
+
+  const syncFormWithAddress = (addr: ProfileAddress) => {
+    const names = addr.fullName.split(" ")
+    shippingForm.reset({
+      firstName: names[0] || "",
+      lastName: names.slice(1).join(" ") || "",
+      email: user?.email || "", // Use user email
+      address: addr.address,
+      city: addr.city,
+      state: addr.state,
+      zipCode: addr.zipCode,
+      country: addr.country === "United States" || addr.country === "USA" ? "US" : "BD",
+      phone: addr.phone,
+    })
+  }
 
   const handleApplyCoupon = useCallback(async () => {
     if (!couponCode.trim()) return
@@ -145,16 +220,21 @@ export function CheckoutPage() {
       const res = await fetch("/api/coupons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode.trim() }),
+        body: JSON.stringify({ 
+          code: couponCode.trim(),
+          subtotal: subtotal,
+          items: items 
+        }),
       })
       const data = await res.json()
       if (data.valid) {
+        // Match the API field names: discountAmount and minOrder
         if (data.minOrder && subtotal < data.minOrder) {
           setCouponError(`Minimum order of ${formatPrice(data.minOrder)} required.`)
           setCouponData(null)
         } else {
           setCouponData(data)
-          toast.success("Coupon applied!", { description: data.message })
+          toast.success("Coupon applied!")
         }
       } else {
         setCouponError(data.error || "Invalid coupon code")
@@ -166,7 +246,7 @@ export function CheckoutPage() {
     } finally {
       setCouponLoading(false)
     }
-  }, [couponCode, subtotal, toast, getSubtotal])
+  }, [couponCode, subtotal, toast, items])
 
   const handleRemoveCoupon = () => {
     setCouponData(null)
@@ -215,11 +295,10 @@ export function CheckoutPage() {
   const giftWrapCost = giftWrap ? 4.99 : 0
   const baseTotal = subtotal + shipping + tax + giftWrapCost
 
-  // ── Coupon-derived values ────────────────────────────────────
-  const couponDiscount = couponData && couponData.valid
-    ? subtotal * (couponData.discount / 100)
-    : 0
-  const totalWithCoupon = Math.max(0, baseTotal - couponDiscount)
+  // ── Rewards Calculation ──────────────────────────────────────
+  const potentialPoints = calculatePointsEarned(subtotal)
+  const redeemedAmount = redeemRewards ? pointsToValue(availablePoints) : 0
+  const totalWithCoupon = Math.max(0, baseTotal - couponDiscount - redeemedAmount)
 
   // ── Shipping Form ──────────────────────────────────────────────
   const shippingForm = useForm<ShippingFormData>({
@@ -244,7 +323,7 @@ export function CheckoutPage() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
+      email: user?.email || "",
       address: "",
       apartment: "",
       city: "",
@@ -271,16 +350,32 @@ export function CheckoutPage() {
   }
 
   const handleContinueShipping = useCallback(() => {
+    // If using a saved address, we only need to validate it's selected. 
+    // The syncFormWithAddress call already ensures the form is populated.
+    if (selectedAddressId !== "new") {
+      setPrevStep(step)
+      setStep(2)
+      return
+    }
+
     const result = shippingSchema.safeParse(shippingForm.getValues())
     if (!result.success) {
       // Trigger validation errors
       const fields = Object.keys(shippingForm.getValues())
       fields.forEach((field) => shippingForm.trigger(field as keyof ShippingFormData))
+      
+      // Specifically inform about which field is failing if it's not obvious
+      const firstError = Object.keys(shippingForm.formState.errors)[0]
+      if (firstError) {
+        toast.error(`Please fix the ${firstError} field to continue.`)
+      } else {
+        toast.error("Please fill in all required fields.")
+      }
       return
     }
     setPrevStep(step)
     setStep(2)
-  }, [shippingForm, step])
+  }, [shippingForm, step, selectedAddressId, toast])
 
   const handleContinuePayment = useCallback(() => {
     if (paymentMethod === "bkash" || paymentMethod === "nagad" || paymentMethod === "rocket") {
@@ -321,6 +416,8 @@ export function CheckoutPage() {
         couponDiscount,
         couponCode: couponData?.code || "",
         giftWrapCost,
+        redeemedPoints: redeemRewards ? availablePoints : 0,
+        earnedPoints: potentialPoints,
         shippingAddress,
         paymentMethod,
         paymentPhone: paymentPhone || "",
@@ -364,7 +461,7 @@ export function CheckoutPage() {
   if (!hydrated) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
       </main>
     )
   }
@@ -408,7 +505,7 @@ export function CheckoutPage() {
             <p className="max-w-md text-sm text-muted-foreground">
               Add some items to your cart before checking out.
             </p>
-            <Button onClick={handleContinueShopping} className="mt-2 bg-orange-500 text-white hover:bg-orange-600">
+            <Button onClick={handleContinueShopping} className="mt-2 bg-blue-600 text-white hover:bg-blue-700">
               Browse Products
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -435,7 +532,7 @@ export function CheckoutPage() {
                 <motion.div
                   className={`relative flex h-11 w-11 items-center justify-center rounded-full border-[3px] transition-colors ${
                     isCompleted || isCurrent
-                      ? "border-orange-500 bg-orange-500 text-white"
+                      ? "border-blue-600 bg-blue-600 text-white"
                       : "border-muted-foreground/25 bg-background text-muted-foreground"
                   }`}
                   animate={
@@ -472,7 +569,7 @@ export function CheckoutPage() {
                 <span
                   className={`text-xs font-medium transition-colors sm:text-sm ${
                     isCurrent
-                      ? "font-bold text-orange-600"
+                      ? "font-bold text-blue-700"
                       : isCompleted
                         ? "text-muted-foreground"
                         : "text-muted-foreground/60"
@@ -488,7 +585,7 @@ export function CheckoutPage() {
                   <div className="absolute inset-0 rounded-full bg-muted-foreground/15" />
                   {/* Progress fill line (orange gradient) */}
                   <motion.div
-                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
+                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
                     initial={false}
                     animate={{
                       width: step > s.id ? "100%" : "0%",
@@ -506,215 +603,155 @@ export function CheckoutPage() {
 
   // ── Step 1: Shipping ───────────────────────────────────────────
   const renderShippingStep = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Truck className="h-5 w-5" />
-          Shipping Address
+    <Card className="border-none shadow-xl shadow-zinc-200/50 dark:shadow-none bg-white dark:bg-zinc-900 overflow-hidden">
+      <CardHeader className="bg-zinc-50 dark:bg-zinc-800/50 border-b">
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <Truck className="h-5 w-5 text-blue-600" />
+          Shipping Information
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
+        {/* Saved Addresses Picker */}
+        {savedAddresses.length > 0 && (
+          <div className="mb-8 p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50">
+            <Label className="text-sm font-bold text-blue-900 dark:text-blue-300 mb-4 block">Select a Saved Address</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {savedAddresses.map((addr) => (
+                <div 
+                  key={addr.id}
+                  onClick={() => {
+                    setSelectedAddressId(addr.id)
+                    syncFormWithAddress(addr)
+                  }}
+                  className={`relative cursor-pointer p-4 rounded-lg border-2 transition-all ${
+                    selectedAddressId === addr.id 
+                      ? "border-blue-600 bg-white dark:bg-zinc-800 shadow-md scale-[1.02]" 
+                      : "border-transparent bg-zinc-100/50 dark:bg-zinc-800/50 hover:border-zinc-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">{addr.label}</span>
+                    {selectedAddressId === addr.id && <Check className="h-4 w-4 text-blue-600" />}
+                  </div>
+                  <p className="text-sm font-bold truncate">{addr.fullName}</p>
+                  <p className="text-xs text-zinc-500 line-clamp-1">{addr.address}</p>
+                  <p className="text-xs text-zinc-500">{addr.city}, {addr.state}</p>
+                </div>
+              ))}
+              <div 
+                onClick={() => setSelectedAddressId("new")}
+                className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed transition-all cursor-pointer ${
+                  selectedAddressId === "new" 
+                    ? "border-blue-600 bg-white dark:bg-zinc-800" 
+                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400"
+                }`}
+              >
+                <Plus className="h-5 w-5 text-zinc-400 mb-1" />
+                <span className="text-xs font-medium">Use a New Address</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault()
             handleContinueShipping()
           }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* First Name */}
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
-              <Input
-                id="firstName"
-                placeholder="John"
-                {...shippingForm.register("firstName")}
-              />
-              {shippingForm.formState.errors.firstName && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.firstName.message}
-                </p>
-              )}
-            </div>
-            {/* Last Name */}
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name *</Label>
-              <Input
-                id="lastName"
-                placeholder="Doe"
-                {...shippingForm.register("lastName")}
-              />
-              {shippingForm.formState.errors.lastName && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.lastName.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              {...shippingForm.register("email")}
-            />
-            {shippingForm.formState.errors.email && (
-              <p className="text-xs text-destructive">
-                {shippingForm.formState.errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Street Address */}
-          <div className="space-y-2">
-            <Label htmlFor="address">Street Address *</Label>
-            <Input
-              id="address"
-              placeholder="123 Main Street"
-              {...shippingForm.register("address")}
-            />
-            {shippingForm.formState.errors.address && (
-              <p className="text-xs text-destructive">
-                {shippingForm.formState.errors.address.message}
-              </p>
-            )}
-          </div>
-
-          {/* Apartment */}
-          <div className="space-y-2">
-            <Label htmlFor="apartment">Apartment, Suite, etc. (optional)</Label>
-            <Input
-              id="apartment"
-              placeholder="Apt 4B"
-              {...shippingForm.register("apartment")}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* City */}
-            <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                placeholder="New York"
-                {...shippingForm.register("city")}
-              />
-              {shippingForm.formState.errors.city && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.city.message}
-                </p>
-              )}
-            </div>
-            {/* State */}
-            <div className="space-y-2">
-              <Label htmlFor="state">State / Province *</Label>
-              <Input
-                id="state"
-                placeholder="NY"
-                {...shippingForm.register("state")}
-              />
-              {shippingForm.formState.errors.state && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.state.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Zip Code */}
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">Zip Code *</Label>
-              <Input
-                id="zipCode"
-                placeholder="10001"
-                {...shippingForm.register("zipCode")}
-              />
-              {shippingForm.formState.errors.zipCode && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.zipCode.message}
-                </p>
-              )}
-            </div>
-            {/* Country */}
-            <div className="space-y-2">
-              <Label>Country *</Label>
-              <Select
-                value={shippingForm.watch("country")}
-                onValueChange={(value) => shippingForm.setValue("country", value)}
+          <AnimatePresence mode="wait">
+            {(selectedAddressId === "new" || savedAddresses.length === 0) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-6 overflow-hidden"
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {shippingForm.formState.errors.country && (
-                <p className="text-xs text-destructive">
-                  {shippingForm.formState.errors.country.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input id="firstName" placeholder="John" {...shippingForm.register("firstName")} />
+                    {shippingForm.formState.errors.firstName && <p className="text-xs text-red-500">{shippingForm.formState.errors.firstName.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input id="lastName" placeholder="Doe" {...shippingForm.register("lastName")} />
+                    {shippingForm.formState.errors.lastName && <p className="text-xs text-red-500">{shippingForm.formState.errors.lastName.message}</p>}
+                  </div>
+                </div>
 
-          {/* Phone */}
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number *</Label>
-            <Input
-              id="phone"
-              placeholder="+1 (555) 000-0000"
-              {...shippingForm.register("phone")}
-            />
-            {shippingForm.formState.errors.phone && (
-              <p className="text-xs text-destructive">
-                {shippingForm.formState.errors.phone.message}
-              </p>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input id="email" type="email" placeholder="you@example.com" {...shippingForm.register("email")} />
+                  {shippingForm.formState.errors.email && <p className="text-xs text-red-500">{shippingForm.formState.errors.email.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Street Address *</Label>
+                  <Input id="address" placeholder="123 Main Street" {...shippingForm.register("address")} />
+                  {shippingForm.formState.errors.address && <p className="text-xs text-red-500">{shippingForm.formState.errors.address.message}</p>}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input id="city" placeholder="New York" {...shippingForm.register("city")} />
+                    {shippingForm.formState.errors.city && <p className="text-xs text-red-500">{shippingForm.formState.errors.city.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State / Province *</Label>
+                    <Input id="state" placeholder="NY" {...shippingForm.register("state")} />
+                    {shippingForm.formState.errors.state && <p className="text-xs text-red-500">{shippingForm.formState.errors.state.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">Zip Code *</Label>
+                    <Input id="zipCode" placeholder="10001" {...shippingForm.register("zipCode")} />
+                    {shippingForm.formState.errors.zipCode && <p className="text-xs text-red-500">{shippingForm.formState.errors.zipCode.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Country *</Label>
+                    <Select value={shippingForm.watch("country")} onValueChange={(val) => shippingForm.setValue("country", val)}>
+                      <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input id="phone" placeholder="+1 (555) 000-0000" {...shippingForm.register("phone")} />
+                  {shippingForm.formState.errors.phone && <p className="text-xs text-red-500">{shippingForm.formState.errors.phone.message}</p>}
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Switch id="saveAddress" checked={saveAddress} onCheckedChange={setSaveAddress} />
+                  <Label htmlFor="saveAddress" className="text-sm font-medium text-zinc-500 cursor-pointer">Save this address to my profile</Label>
+                </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
 
-          {/* Save Address Checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="saveAddress"
-              checked={saveAddress}
-              onCheckedChange={(checked) => setSaveAddress(checked === true)}
-            />
-            <Label htmlFor="saveAddress" className="cursor-pointer text-sm text-muted-foreground">
-              Save this address for future orders
-            </Label>
-          </div>
-
-          {/* Order Notes */}
           <div className="space-y-2">
             <Label htmlFor="orderNotes">Order Notes (optional)</Label>
-            <Textarea
-              id="orderNotes"
-              placeholder="Any special delivery instructions..."
-              value={orderNotes}
-              onChange={(e) => setOrderNotes(e.target.value)}
-              className="min-h-[80px] resize-none"
+            <Textarea 
+              id="orderNotes" 
+              placeholder="Apartment buzzer, gate code, or delivery instructions..." 
+              value={orderNotes} 
+              onChange={e => setOrderNotes(e.target.value)}
+              className="min-h-[100px]"
             />
           </div>
 
-          {/* Continue Button */}
-          <div className="pt-4">
-            <Button
-              type="submit"
-              className="w-full bg-orange-500 text-white hover:bg-orange-600"
-              size="lg"
-            >
-              Continue to Payment
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <Button type="submit" className="w-full h-12 bg-blue-700 hover:bg-orange-700 text-lg font-bold" disabled={loadingProfile}>
+            Continue to Payment
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </form>
       </CardContent>
     </Card>
@@ -740,7 +777,7 @@ export function CheckoutPage() {
             htmlFor="bkash"
             className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${
               paymentMethod === "bkash"
-                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                ? "border-blue-600 bg-blue-50 dark:bg-orange-950/30"
                 : "border-border hover:border-muted-foreground/30"
             }`}
           >
@@ -757,7 +794,7 @@ export function CheckoutPage() {
             htmlFor="nagad"
             className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${
               paymentMethod === "nagad"
-                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                ? "border-blue-600 bg-blue-50 dark:bg-orange-950/30"
                 : "border-border hover:border-muted-foreground/30"
             }`}
           >
@@ -774,7 +811,7 @@ export function CheckoutPage() {
             htmlFor="rocket"
             className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${
               paymentMethod === "rocket"
-                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                ? "border-blue-600 bg-blue-50 dark:bg-orange-950/30"
                 : "border-border hover:border-muted-foreground/30"
             }`}
           >
@@ -791,7 +828,7 @@ export function CheckoutPage() {
             htmlFor="gpay"
             className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${
               paymentMethod === "gpay"
-                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30"
+                ? "border-blue-600 bg-blue-50 dark:bg-orange-950/30"
                 : "border-border hover:border-muted-foreground/30"
             }`}
           >
@@ -850,7 +887,7 @@ export function CheckoutPage() {
           </Button>
           <Button
             onClick={handleContinuePayment}
-            className="flex-1 bg-orange-500 text-white hover:bg-orange-600"
+            className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
           >
             Continue to Review
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -946,7 +983,7 @@ export function CheckoutPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Gift className="h-5 w-5 text-orange-500" />
+            <Gift className="h-5 w-5 text-blue-600" />
             Gift Options
           </CardTitle>
         </CardHeader>
@@ -960,7 +997,7 @@ export function CheckoutPage() {
                   setGiftWrap(checked === true)
                   if (!checked) setGiftMessage("")
                 }}
-                className="data-[state=checked]:bg-orange-500"
+                className="data-[state=checked]:bg-blue-600"
               />
               <div>
                 <Label htmlFor="giftWrap" className="cursor-pointer font-medium">
@@ -971,7 +1008,7 @@ export function CheckoutPage() {
                 </p>
               </div>
             </div>
-            <span className="text-sm font-semibold text-orange-500">$4.99</span>
+            <span className="text-sm font-semibold text-blue-600">$4.99</span>
           </div>
 
           <AnimatePresence>
@@ -1012,11 +1049,11 @@ export function CheckoutPage() {
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: 0.1 }}
-                      className="rounded-lg bg-orange-50 border border-orange-200 dark:bg-orange-950/20 dark:border-orange-900 p-3"
+                      className="rounded-lg bg-blue-50 border border-blue-200 dark:bg-orange-950/20 dark:border-orange-900 p-3"
                     >
                       <div className="flex items-center gap-1.5 mb-1.5">
-                        <Gift className="h-3.5 w-3.5 text-orange-500" />
-                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                        <Gift className="h-3.5 w-3.5 text-blue-600" />
+                        <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
                           Message Preview
                         </span>
                       </div>
@@ -1085,10 +1122,22 @@ export function CheckoutPage() {
             </div>
           )}
 
+          {/* Rewards Redemption */}
+          {redeemRewards && redeemedAmount > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Rewards Redemption
+              </span>
+              <span className="font-medium text-green-600">
+                -{formatPrice(redeemedAmount)}
+              </span>
+            </div>
+          )}
+
           <Separator />
           <div className="flex items-center justify-between text-xl font-bold">
             <span>Total</span>
-            <span className="text-orange-500">{formatPrice(totalWithCoupon)}</span>
+            <span className="text-blue-600">{formatPrice(totalWithCoupon)}</span>
           </div>
 
           {/* Coupon Section */}
@@ -1097,11 +1146,11 @@ export function CheckoutPage() {
               <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-800 dark:bg-green-950/30">
                 <BadgeCheck className="h-4.5 w-4.5 shrink-0 text-green-600" />
                 <span className="flex-1 text-sm font-medium text-green-700 dark:text-green-400">
-                  Promo Code Applied: {couponData.code} (-{couponData.discount}%)
+                  Promo Code Applied: {couponData.code} ({couponData.discountType === 'fixed' ? formatPrice(couponData.discountValue) : `${couponData.discountValue}%`} OFF)
                 </span>
                 <button
                   onClick={handleRemoveCoupon}
-                  className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-red-500 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+                  className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-red-500 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
                 >
                   Remove
                 </button>
@@ -1125,7 +1174,7 @@ export function CheckoutPage() {
                   size="sm"
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponCode.trim()}
-                  className="h-9 shrink-0 text-orange-600 border-orange-300 hover:bg-orange-500 hover:text-white hover:border-orange-500 dark:text-orange-400 dark:border-orange-700"
+                  className="h-9 shrink-0 text-blue-700 border-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 dark:text-blue-400 dark:border-orange-700"
                 >
                   {couponLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1141,9 +1190,46 @@ export function CheckoutPage() {
             )}
           </div>
 
+          {/* Rewards Redemption Toggle */}
+          {availablePoints > 0 && (
+            <div className="pt-1">
+              <div className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${redeemRewards ? 'bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800' : 'bg-muted/30 border-muted'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 flex items-center justify-center rounded-full ${redeemRewards ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-muted text-muted-foreground'}`}>
+                    <Star className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold">Say Rewards</h4>
+                    <p className="text-[10px] text-muted-foreground">You have {availablePoints} points available</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-blue-600">
+                    {formatPrice(pointsToValue(availablePoints))}
+                  </span>
+                  <Switch 
+                    id="redeem-rewards-switch"
+                    checked={redeemRewards} 
+                    onCheckedChange={setRedeemRewards} 
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Potential Points Banner */}
+          <div className="pt-1">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 border border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40">
+              <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-[10px] font-medium text-orange-700 dark:text-orange-400">
+                EARN <span className="font-bold text-orange-800 dark:text-orange-300">{potentialPoints} POINTS</span> ON THIS ORDER
+              </span>
+            </div>
+          </div>
+
           {/* Estimated Delivery */}
           <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-            <Calendar className="h-4 w-4 shrink-0 text-orange-500" />
+            <Calendar className="h-4 w-4 shrink-0 text-blue-600" />
             <div>
               <p className="text-sm font-medium text-foreground">Estimated Delivery</p>
               <p className="text-xs text-muted-foreground">
@@ -1154,7 +1240,7 @@ export function CheckoutPage() {
 
           {/* Security Badge */}
           <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-            <Shield className="h-4 w-4 shrink-0 text-orange-500" />
+            <Shield className="h-4 w-4 shrink-0 text-blue-600" />
             <div>
               <p className="text-sm font-medium text-foreground">
                 🔒 Secure Checkout
@@ -1180,7 +1266,7 @@ export function CheckoutPage() {
         <Button
           onClick={handlePlaceOrder}
           disabled={placingOrder}
-          className="flex-1 bg-orange-500 text-white hover:bg-orange-600"
+          className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
           size="lg"
         >
           {placingOrder ? (
@@ -1202,7 +1288,7 @@ export function CheckoutPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Decorative Orange Gradient Line */}
-      <div className="h-1.5 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600" />
+      <div className="h-1.5 bg-gradient-to-r from-blue-400 via-blue-600 to-blue-700" />
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Breadcrumb */}

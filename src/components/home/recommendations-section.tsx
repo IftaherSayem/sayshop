@@ -117,7 +117,7 @@ export function RecommendationsSection() {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-gradient-to-b from-orange-50/30 via-transparent to-transparent dark:from-orange-950/10 dark:via-transparent dark:to-transparent">
+    <section className="py-12 md:py-16 bg-gradient-to-b from-blue-50/30 via-transparent to-transparent dark:from-orange-950/10 dark:via-transparent dark:to-transparent">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -134,9 +134,9 @@ export function RecommendationsSection() {
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4"
         >
           <div>
-            <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-orange-400 to-orange-600" />
+            <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-blue-400 to-blue-700" />
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+              <Sparkles className="h-5 w-5 text-blue-600" />
               <h2 className="text-2xl md:text-3xl font-bold">Recommended for You</h2>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -156,7 +156,7 @@ export function RecommendationsSection() {
                 size="sm"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="gap-2 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-orange-700"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh Picks

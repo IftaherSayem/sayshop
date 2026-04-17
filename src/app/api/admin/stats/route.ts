@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdmin } from '../_auth'
 import { toCamel } from '@/lib/supabase/helpers'
+import { getStatsCache, setStatsCache } from '@/lib/admin-cache'
 
 // ── GET: Dashboard stats ──────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   const { error } = await verifyAdmin(request)
   if (error) return error
+
+  const cached = getStatsCache()
+  if (cached) return NextResponse.json(cached)
 
   try {
     const supabase = await createSupabaseServerClient()
@@ -60,8 +64,7 @@ export async function GET(request: NextRequest) {
         .from('orders')
         .select(`
           id, total_amount, status, payment_status, created_at,
-          profiles(full_name),
-          users(email)
+          users(email, profiles(full_name))
         `)
         .order('created_at', { ascending: false })
         .limit(10),
@@ -81,8 +84,8 @@ export async function GET(request: NextRequest) {
 
     // Transform recent orders
     const recentOrders = (recentOrdersResult.data || []).map((o: Record<string, unknown>) => {
-      const profile = o.profiles as Record<string, unknown> | null
       const user = o.users as Record<string, unknown> | null
+      const profile = user?.profiles as Record<string, unknown> | null
       return {
         id: o.id,
         orderNumber: `SS-${String(o.id).slice(0, 8).toUpperCase()}`,
@@ -113,7 +116,46 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    // Fetch daily sales for the last 30 days to build a more granular chart if needed, 
+    // or just fetch 6 months of monthly data. Let's do 6 months of monthly data.
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    sixMonthsAgo.setHours(0, 0, 0, 0)
+
+    const { data: salesHistoryData } = await supabase
+      .from('orders')
+      .select('total_amount, created_at')
+      .neq('status', 'cancelled')
+      .gte('created_at', sixMonthsAgo.toISOString())
+
+    // Group sales by month
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const salesHistoryMap: Record<string, number> = {}
+    
+    // Initialize last 6 months with 0
+    for (let i = 0; i < 6; i++) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      const label = months[d.getMonth()]
+      salesHistoryMap[label] = 0
+    }
+
+    if (salesHistoryData) {
+      salesHistoryData.forEach((order) => {
+        const d = new Date(order.created_at)
+        const label = months[d.getMonth()]
+        if (salesHistoryMap[label] !== undefined) {
+          salesHistoryMap[label] += Number(order.total_amount) || 0
+        }
+      })
+    }
+
+    // Convert map to array of { name: month, sales: amount } and reverse to chronological order
+    const salesHistory = Object.entries(salesHistoryMap)
+      .map(([name, sales]) => ({ name, sales }))
+      .reverse()
+
+    const result = {
       totalRevenue,
       totalOrders: ordersCountResult.count || 0,
       totalProducts: productsCountResult.count || 0,
@@ -121,7 +163,13 @@ export async function GET(request: NextRequest) {
       totalCoupons: couponsCountResult.count || 0,
       recentOrders,
       lowStockProducts,
-    })
+      salesHistory,
+    }
+
+    // Update cache
+    setStatsCache(result)
+
+    return NextResponse.json(result)
   } catch (e) {
     console.error('Admin stats error:', e)
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })

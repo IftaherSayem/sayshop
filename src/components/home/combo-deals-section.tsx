@@ -53,7 +53,7 @@ const comboDeals: ComboDeal[] = [
     items: [
       { name: 'Yoga Mat', originalPrice: 34.99, icon: Dumbbell, bgColor: 'bg-green-100 dark:bg-green-950/50' },
       { name: 'Water Bottle', originalPrice: 19.99, icon: Droplets, bgColor: 'bg-cyan-100 dark:bg-cyan-950/50' },
-      { name: 'Resistance Bands', originalPrice: 15.99, icon: Grip, bgColor: 'bg-orange-100 dark:bg-orange-950/50' },
+      { name: 'Resistance Bands', originalPrice: 15.99, icon: Grip, bgColor: 'bg-blue-100 dark:bg-orange-950/50' },
     ],
     bundlePrice: 54.99,
     originalTotal: 70.97,
@@ -71,9 +71,9 @@ export function ComboDealsSection() {
   };
 
   return (
-    <section className="relative py-16 bg-gradient-to-b from-orange-50/30 to-transparent">
+    <section className="relative py-16 bg-gradient-to-b from-blue-50/30 to-transparent">
       {/* Decorative gradient line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-full" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-blue-400 via-blue-600 to-blue-700 rounded-full" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -85,7 +85,7 @@ export function ComboDealsSection() {
           className="text-center mb-10"
         >
           <div className="inline-flex items-center gap-2 mb-3">
-            <Package className="h-6 w-6 text-orange-500" />
+            <Package className="h-6 w-6 text-blue-600" />
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
               Bundle & Save
             </h2>
@@ -107,7 +107,7 @@ export function ComboDealsSection() {
               className="group rounded-xl border bg-card shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
             >
               {/* Card Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3">
                 <h3 className="text-white font-bold text-lg">{deal.title}</h3>
               </div>
 
@@ -145,7 +145,7 @@ export function ComboDealsSection() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-base font-semibold text-foreground">Bundle Price:</span>
-                    <span className="text-2xl font-bold text-orange-500">
+                    <span className="text-2xl font-bold text-blue-600">
                       {formatPrice(deal.bundlePrice)}
                     </span>
                   </div>
@@ -159,7 +159,7 @@ export function ComboDealsSection() {
                 {/* Add to Cart Button */}
                 <Button
                   onClick={() => handleAddBundle(deal)}
-                  className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm gap-2 transition-colors"
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm gap-2 transition-colors"
                 >
                   <ShoppingCart className="h-4 w-4" />
                   Add Bundle to Cart

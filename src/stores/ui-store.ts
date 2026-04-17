@@ -12,6 +12,8 @@ interface UIStore {
   openSearch: () => void;
   closeSearch: () => void;
   setSearchQuery: (query: string) => void;
+  initialLoadDone: boolean;
+  setInitialLoadDone: (done: boolean) => void;
   /** Initialize URL sync (call once from a component on mount) */
   initUrlSync: () => void;
   /** Whether URL sync has been initialized */
@@ -23,6 +25,8 @@ export const useUIStore = create<UIStore>((set, get) => ({
   viewHistory: [],
   isSearchOpen: false,
   searchQuery: "",
+  initialLoadDone: false,
+  setInitialLoadDone: (done) => set({ initialLoadDone: done }),
   _urlSyncReady: false,
 
   setView: (view) => {
@@ -35,7 +39,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
     // Sync to browser URL after state update
     if (typeof window !== "undefined") {
       const url = viewToUrl(view);
-      const fullUrl = `${window.location.origin}${url}`;
       window.history.pushState({ view }, "", url);
       // Update document title (async to allow product name fetch)
       updateTitle(view);
@@ -45,22 +48,20 @@ export const useUIStore = create<UIStore>((set, get) => ({
   goBack: () => {
     set((state) => {
       const history = [...state.viewHistory];
-      const previousView = history.pop();
+      const previousView = history.pop() ?? { type: "home" as const };
+
+      // Sync browser URL inside set() so we use the freshly computed view
+      if (typeof window !== "undefined") {
+        const url = viewToUrl(previousView);
+        window.history.pushState({ view: previousView }, "", url);
+        updateTitle(previousView);
+      }
+
       return {
-        currentView: previousView || { type: "home" },
+        currentView: previousView,
         viewHistory: history,
       };
     });
-
-    // Sync browser back navigation
-    // pushState is handled by popstate listener below, but if the user
-    // calls goBack programmatically (not via browser), we also push
-    if (typeof window !== "undefined") {
-      const view = get().currentView;
-      const url = viewToUrl(view);
-      window.history.pushState({ view }, "", url);
-      updateTitle(view);
-    }
   },
 
   openSearch: () => set({ isSearchOpen: true }),
@@ -96,12 +97,11 @@ export const useUIStore = create<UIStore>((set, get) => ({
       } else {
         // Parse from URL as fallback
         const parsed = urlToView(window.location.pathname, window.location.search);
-        set((s) => set((state) => ({
-          currentView: event.state.view as AppView,
+        set((state) => ({
+          currentView: parsed,
           viewHistory: [...state.viewHistory, state.currentView],
           isSearchOpen: false,
         }));
-
         updateTitle(parsed);
       }
     });

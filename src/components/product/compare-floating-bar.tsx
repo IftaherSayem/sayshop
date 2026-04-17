@@ -33,7 +33,7 @@ export function CompareFloatingBar() {
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="fixed bottom-16 md:bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-lg"
       >
-        <div className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+        <div className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 shadow-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white">
           <div className="flex items-center gap-2 min-w-0">
             <GitCompareArrows className="h-5 w-5 flex-shrink-0" />
             <span className="text-sm font-medium truncate">
@@ -51,7 +51,7 @@ export function CompareFloatingBar() {
             </Button>
             <Button
               size="sm"
-              className="h-8 bg-white text-orange-600 hover:bg-white/90 font-semibold"
+              className="h-8 bg-white text-blue-700 hover:bg-white/90 font-semibold"
               onClick={handleCompareNow}
             >
               Compare Now

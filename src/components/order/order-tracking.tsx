@@ -86,7 +86,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
   },
   shipped: {
     label: "Shipped",
-    color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+    color: "bg-blue-100 text-orange-800 dark:bg-orange-900/30 dark:text-blue-400",
   },
   out_for_delivery: {
     label: "Out for Delivery",
@@ -127,8 +127,8 @@ function TrackingTimeline({ order }: { order: Order }) {
           lineClass = "bg-green-500"
           labelClass = "text-green-600 dark:text-green-400"
         } else if (isCurrent) {
-          circleClass = "border-orange-500 bg-orange-500 text-white ring-4 ring-orange-500/20"
-          labelClass = "text-orange-500 font-semibold"
+          circleClass = "border-blue-600 bg-blue-600 text-white ring-4 ring-blue-600/20"
+          labelClass = "text-blue-600 font-semibold"
         }
 
         return (
@@ -174,7 +174,7 @@ function TrackingTimeline({ order }: { order: Order }) {
                 {isCurrent && (
                   <Badge
                     variant="secondary"
-                    className="shrink-0 border-0 bg-orange-100 text-orange-700 text-[10px] dark:bg-orange-900/30 dark:text-orange-400"
+                    className="shrink-0 border-0 bg-blue-100 text-orange-700 text-[10px] dark:bg-orange-900/30 dark:text-blue-400"
                   >
                     Current
                   </Badge>
@@ -345,7 +345,7 @@ function TrackingContent() {
             <Button
               onClick={handleTrack}
               disabled={!orderNumber.trim() || loading}
-              className="w-full bg-orange-500 text-white hover:bg-orange-600"
+              className="w-full bg-blue-600 text-white hover:bg-blue-700"
             >
               {loading ? (
                 <>
@@ -424,7 +424,7 @@ function TrackingContent() {
             <Card className="border-muted/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Truck className="h-4 w-4 text-orange-500" />
+                  <Truck className="h-4 w-4 text-blue-600" />
                   Tracking Progress
                 </CardTitle>
               </CardHeader>
@@ -437,7 +437,7 @@ function TrackingContent() {
             <Card className="border-muted/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Package className="h-4 w-4 text-orange-500" />
+                  <Package className="h-4 w-4 text-blue-600" />
                   Order Items ({items.length})
                 </CardTitle>
               </CardHeader>
@@ -452,7 +452,7 @@ function TrackingContent() {
                   >
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-muted">
                       <img
-                        src={item.image}
+                        src={item.image || "/images/placeholder.png"}
                         alt={item.name}
                         className="h-full w-full object-cover"
                       />
@@ -471,7 +471,7 @@ function TrackingContent() {
                 <Separator />
                 <div className="flex items-center justify-between text-sm font-bold">
                   <span>Total</span>
-                  <span className="text-orange-500">{formatPrice(order.total)}</span>
+                  <span className="text-blue-600">{formatPrice(order.total)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -480,7 +480,7 @@ function TrackingContent() {
             <Card className="border-muted/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <MapPin className="h-4 w-4 text-orange-500" />
+                  <MapPin className="h-4 w-4 text-blue-600" />
                   Shipping Address
                 </CardTitle>
               </CardHeader>
@@ -556,7 +556,7 @@ export function OrderTracking() {
       >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 text-lg">
-            <TruckIcon className="h-5 w-5 text-orange-500" />
+            <TruckIcon className="h-5 w-5 text-blue-600" />
             Track Your Order
           </SheetTitle>
           <SheetDescription>
