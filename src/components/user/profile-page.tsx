@@ -96,6 +96,7 @@ export function ProfilePage() {
     fullName: user?.name || "",
     phone: "",
     avatar: "",
+    points: 0,
     loyaltyTier: "Bronze",
     twoFactorEnabled: false
   })
@@ -242,7 +243,7 @@ export function ProfilePage() {
       if (!res.ok) throw new Error()
       
       const data = await res.json()
-      const updatedProfile = { ...profileData, avatar: publicUrl }
+      const updatedProfile = { ...profileData, avatar: publicUrl, points: profileData.points || 0 }
       setProfileData(updatedProfile)
       setInitialProfileData(updatedProfile)
       setUser({ ...user!, name: data.profile.fullName })
