@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
 import { hashPassword } from '@/lib/auth'
+import { getClientIp } from '@/lib/utils'
 
 // ───────────────────────────────────────────────────────────
 // POST /api/auth/signup
@@ -10,7 +11,6 @@ import { hashPassword } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     // ── SECURITY: Registration Rate Limiting ────────────────
-    const { getClientIp } = await import('../signin/route')
     const ip = getClientIp(request)
 
     // Simple in-memory throttler for signups (max 3 per 15 mins per IP)
