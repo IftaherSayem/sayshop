@@ -3,6 +3,7 @@ import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/sup
 import { verifyAdmin } from '../_auth'
 import { toCamel } from '@/lib/supabase/helpers'
 import { invalidateStatsCache } from '@/lib/admin-cache'
+import { clearProductsCache } from '@/lib/products-cache'
 import { revalidatePath } from 'next/cache'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -224,6 +225,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     invalidateStatsCache()
+    clearProductsCache()
     revalidatePath('/')
     revalidatePath('/admin')
     revalidatePath('/products')
@@ -378,6 +380,7 @@ export async function PUT(request: NextRequest) {
       .single()
 
     invalidateStatsCache()
+    clearProductsCache()
     revalidatePath('/')
     revalidatePath('/admin')
     revalidatePath('/products')
@@ -431,6 +434,7 @@ export async function DELETE(request: NextRequest) {
     revalidatePath('/admin')
     revalidatePath('/products')
     invalidateStatsCache()
+    clearProductsCache()
     return NextResponse.json({ message: 'Product deleted successfully' })
   } catch (e) {
     console.error('Delete product error:', e)

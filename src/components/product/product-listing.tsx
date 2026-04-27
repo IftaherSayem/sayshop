@@ -79,6 +79,7 @@ interface ProductListingProps {
   sort?: string;
   minPrice?: number;
   maxPrice?: number;
+  page?: number;
 }
 
 const PRODUCTS_PER_PAGE = 12;
@@ -131,6 +132,7 @@ export function ProductListing({
   sort: propSort,
   minPrice: propMinPrice,
   maxPrice: propMaxPrice,
+  page: propPage,
 }: ProductListingProps) {
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -140,6 +142,7 @@ export function ProductListing({
     search: propSearch || "",
     sort: propSort || "newest",
     selectedCategories: propCategoryId ? [propCategoryId] : [],
+    page: propPage || 1,
   });
   const [categories, setCategories] = useState<(Category & { productCount: number })[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
@@ -252,6 +255,7 @@ export function ProductListing({
     if (filters.sort !== "newest") params.set("sort", filters.sort);
     if (filters.priceMin > 0) params.set("minPrice", String(filters.priceMin));
     if (filters.priceMax < PRICE_SLIDER_MAX) params.set("maxPrice", String(filters.priceMax));
+    if (filters.page > 1) params.set("pages", String(filters.page));
 
     const qs = params.toString();
     const newUrl = `/products${qs ? `?${qs}` : ""}`;
@@ -263,22 +267,31 @@ export function ProductListing({
         search: filters.search || undefined,
         sort: filters.sort !== "newest" ? filters.sort : undefined,
         minPrice: filters.priceMin > 0 ? filters.priceMin : undefined,
-        maxPrice: filters.priceMax < PRICE_SLIDER_MAX ? filters.priceMax : undefined
+        maxPrice: filters.priceMax < PRICE_SLIDER_MAX ? filters.priceMax : undefined,
+        page: filters.page > 1 ? filters.page : undefined
       };
       window.history.replaceState({ view: viewState }, "", newUrl);
     }
   }, [filters, resolvedCategoryId, propCategorySlug, categories]);
 
-  // Fetch categories
+  // Fetch categories and brands
   useEffect(() => {
     let cancelled = false;
-    async function fetchCategories() {
+    async function fetchData() {
       setIsCategoriesLoading(true);
       try {
-        const res = await fetch("/api/categories");
-        if (res.ok) {
-          const data = await res.json();
+        const [catRes, brandRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/products/brands")
+        ]);
+
+        if (catRes.ok) {
+          const data = await catRes.json();
           if (!cancelled) setCategories(data);
+        }
+        if (brandRes.ok) {
+          const data = await brandRes.json();
+          if (!cancelled) setBrands(data);
         }
       } catch {
         // silently handle
@@ -286,9 +299,9 @@ export function ProductListing({
         if (!cancelled) setIsCategoriesLoading(false);
       }
     }
-    fetchCategories();
+    fetchData();
     return () => { cancelled = true; };
-  }, []);
+  }, [realtimeTick]); // Refetch when products change too
 
   // Build query params from filters
   const queryParams = useMemo(() => {
@@ -319,6 +332,16 @@ export function ProductListing({
       params.set("maxPrice", String(filters.priceMax));
     }
 
+    // Brands filter
+    if (filters.selectedBrands.length > 0) {
+      params.set("brands", filters.selectedBrands.join(","));
+    }
+
+    // Rating filter
+    if (filters.minRating !== null) {
+      params.set("minRating", String(filters.minRating));
+    }
+
     // Override with props if provided
     if (propMinPrice !== undefined) params.set("minPrice", String(propMinPrice));
     if (propMaxPrice !== undefined) params.set("maxPrice", String(propMaxPrice));
@@ -339,16 +362,6 @@ export function ProductListing({
             setProducts(data.products);
             setTotalProducts(data.total);
             setTotalPages(data.totalPages);
-
-            // Extract unique brands from products for the brand filter
-            const uniqueBrands = Array.from(
-              new Set(
-                data.products
-                  .map((p: Product) => p.brand)
-                  .filter(Boolean) as string[]
-              )
-            ).sort();
-            setBrands(uniqueBrands);
           }
         }
       } catch {
@@ -424,19 +437,8 @@ export function ProductListing({
     return count;
   }, [filters]);
 
-  // Filter products by brand and rating (client-side since API doesn't support these)
-  const filteredProducts = useMemo(() => {
-    let result = products;
-    if (filters.selectedBrands.length > 0) {
-      result = result.filter(
-        (p) => p.brand && filters.selectedBrands.includes(p.brand)
-      );
-    }
-    if (filters.minRating !== null) {
-      result = result.filter((p) => p.rating >= filters.minRating!);
-    }
-    return result;
-  }, [products, filters.selectedBrands, filters.minRating]);
+  // No client-side filtering needed anymore as it's server-side
+  const filteredProducts = products;
 
   // Get selected category name
   const selectedCategoryName = useMemo(() => {
@@ -935,131 +937,7 @@ export function ProductListing({
 
   return (
     <div className="w-full">
-      {/* Breadcrumb Navigation */}
-      <div className="py-3">
-        <Breadcrumb>
-          <BreadcrumbList className="text-sm">
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setView({ type: "home" });
-                }}
-                className="hover:text-blue-700"
-              >
-                Home
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            {breadcrumbContext ? (
-              <>
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="text-muted-foreground font-normal">
-                    Products
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumbContext.label}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            ) : (
-              <BreadcrumbItem>
-                <BreadcrumbPage>Products</BreadcrumbPage>
-              </BreadcrumbItem>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      {/* Page Title */}
-      <motion.div
-        className="mb-4"
-        key={pageTitle}
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h1 className="text-2xl font-bold">
-          {pageTitle}
-          {!isLoading && (
-            <span className="text-muted-foreground font-normal text-base ml-2">
-              ({totalProducts} {totalProducts === 1 ? "product" : "products"} found)
-            </span>
-          )}
-        </h1>
-      </motion.div>
-
-      {/* Search / Query Display Bar */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        {filters.search && (
-          <div className="flex items-center gap-2 bg-blue-50 text-orange-700 px-3 py-1.5 rounded-full text-sm">
-            <Search className="h-3.5 w-3.5" />
-            <span>
-              Showing results for &lsquo;{filters.search}&rsquo;
-            </span>
-            <button
-              onClick={clearSearch}
-              className="hover:bg-blue-100 rounded-full p-0.5 transition-colors"
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-        {selectedCategoryName && (
-          <Badge variant="secondary" className="text-sm py-1 px-3">
-            {selectedCategoryName}
-            <button
-              onClick={() => updateFilter("selectedCategories", [])}
-              className="ml-1.5 hover:text-destructive transition-colors"
-              aria-label="Clear category"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        )}
-        {filters.selectedBrands.map((brand) => (
-          <Badge key={brand} variant="secondary" className="text-sm py-1 px-3">
-            {brand}
-            <button
-              onClick={() => toggleBrand(brand)}
-              className="ml-1.5 hover:text-destructive transition-colors"
-              aria-label={`Remove ${brand} filter`}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ))}
-        {filters.minRating !== null && (
-          <Badge variant="secondary" className="text-sm py-1 px-3">
-            {filters.minRating}+ Stars
-            <button
-              onClick={() => setRatingFilter(null)}
-              className="ml-1.5 hover:text-destructive transition-colors"
-              aria-label="Clear rating filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        )}
-        {!isPriceAtExtremes && (
-          <Badge variant="secondary" className="text-sm py-1 px-3">
-            {formatPrice(filters.priceMin)} – {formatPrice(filters.priceMax)}
-            <button
-              onClick={() => {
-                updateFilter("priceMin", 0);
-                updateFilter("priceMax", PRICE_SLIDER_MAX);
-              }}
-              className="ml-1.5 hover:text-destructive transition-colors"
-              aria-label="Clear price filter"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        )}
-      </div>
+      {/* Filter Badges Removed for minimalist design */}
 
       <div className="flex gap-6">
         {/* Desktop Sidebar */}
@@ -1072,11 +950,7 @@ export function ProductListing({
                     <SlidersHorizontal className="h-4 w-4" />
                     Filters
                   </h2>
-                  {activeFilterCount > 0 && (
-                    <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-xs">
-                      {activeFilterCount}
-                    </Badge>
-                  )}
+
                 </div>
                 {filterSidebarContent('desktop')}
               </CardContent>
@@ -1099,11 +973,6 @@ export function ProductListing({
                 >
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filters
-                  {activeFilterCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
                 </Button>
               )}
               <span className="text-sm text-muted-foreground">

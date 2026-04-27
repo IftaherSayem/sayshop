@@ -183,21 +183,13 @@ export const ProductCard = memo(function ProductCard({ product, onQuickView }: P
           style={shineStyle}
         />
       )}
-      {/* Shimmer border effect on hover (desktop only) */}
-      {!isTouchDevice && (
-        <div className="absolute inset-0 rounded-lg pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute inset-0 rounded-lg p-[2px] overflow-hidden">
-            <div className="absolute inset-[-50%] bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
-          </div>
-        </div>
-      )}
 
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-neutral-50 dark:bg-neutral-900/50">
         <Image
           src={images[0]?.url || "/images/products/headphones.png"}
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
         />
         {/* Discount badge - top left */}

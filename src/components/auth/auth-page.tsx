@@ -23,7 +23,10 @@ import {
   ShieldCheck,
   KeyRound,
   RefreshCw,
+  FileText,
+  Smartphone
 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { AuthUser } from "@/stores/auth-store"
 
 export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string; authMode?: 'signin' | 'signup' | 'forgot-password' | 'reset-password' }) {
@@ -33,13 +36,9 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
   // ── Sync with AuthMode prop (Routing) ──
   useEffect(() => {
     if (authMode === 'signup') {
-      // In AuthPage, we use Tabs. Value "signup" corresponds to Register.
-      // We don't have a direct state for tab other than the defaultValue or DOM.
-      // But we can trigger a DOM click or better, handle via internal state if we had it.
-      // However, we have verificationStep for sub-flows.
       setVerificationStep(null);
     } else if (authMode === 'forgot-password') {
-      setVerificationStep('forgot-verify');
+      setVerificationStep('forgot-request');
     } else if (authMode === 'reset-password') {
       setVerificationStep('forgot-update');
     } else {
@@ -49,10 +48,10 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
 
   // Helper to change view and sync URL
   const changeAuthMode = (mode: 'signin' | 'signup' | 'forgot-password' | 'reset-password') => {
-     setSigninError(null);
-     setSignupError(null);
-     setForgotError(null);
-     setView({ type: 'auth', authMode: mode, prefilledEmail: signinEmail });
+    setSigninError(null);
+    setSignupError(null);
+    setForgotError(null);
+    setView({ type: 'auth', authMode: mode, prefilledEmail: signinEmail });
   }
 
   // Redirect if already authenticated
@@ -81,8 +80,10 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
   // ── Sign Up state ──
   const [signupName, setSignupName] = useState("")
   const [signupEmail, setSignupEmail] = useState(prefilledEmail || "")
-  const [signupPassword, setSignupPassword] = useState("")
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState("")
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [verificationStep, setVerificationStep] = useState<null | 'verify' | 'forgot-request' | 'forgot-verify' | 'forgot-update'>(null)
   const [resetCode, setResetCode] = useState(["", "", "", "", "", ""])
@@ -95,9 +96,13 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
   const [resendLoading, setResendLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [forgotLoading, setForgotLoading] = useState(false)
-  const [forgotError, setForgotError] = useState<string | null>(null)
-  const [signinError, setSigninError] = useState<string | null>(null)
-  const [signupError, setSignupError] = useState<string | null>(null)
+  const [signinError, setSigninError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [authMessage, setAuthMessage] = useState<{ type: 'success' | 'info' | 'error', text: string } | null>(null)
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
   const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -139,7 +144,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
     e.preventDefault()
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
     if (pasted.length === 0) return
-    
+
     if (isReset) {
       const newCode = [...resetCode]
       for (let i = 0; i < 6; i++) {
@@ -161,6 +166,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+    setAuthMessage(null)
     setSigninError(null)
     if (!signinEmail.trim() || !signinPassword) {
       setSigninError("Please fill in all fields")
@@ -175,23 +181,10 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       })
       const data = await res.json()
       if (!res.ok) {
-        // Check if verification is required
         if (data.requiresVerification) {
           setVerifyEmail(data.email)
           setVerificationStep("verify")
-          
-          if (data.error === 'Please verify your identity. A verification code was sent to your email.') {
-             toast.info("Please verify your identity")
-          } else {
-             toast.info("Verification code sent to your email")
-             try {
-               await fetch("/api/auth/send-verification", {
-                 method: "POST",
-                 headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ email: data.email }),
-               })
-             } catch {}
-          }
+          setAuthMessage({ type: 'info', text: data.error || "Please verify your identity" })
         } else {
           setSigninError(data.error || "Sign in failed")
         }
@@ -199,7 +192,6 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       }
       const user: AuthUser = data.user
       login(user)
-      toast.success(`Welcome back, ${user.name}!`)
       setView({ type: "home" })
     } catch {
       setSigninError("Network error. Please try again.")
@@ -210,17 +202,43 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Reset all errors
+    setAuthMessage(null)
     setSignupError(null)
-    if (!signupName.trim() || !signupEmail.trim() || !signupPassword || !signupConfirmPassword) {
-      setSignupError("Please fill in all fields")
+    setPhoneError(null)
+    setPasswordError(null)
+    setTermsError(null)
+
+    // Validation Flow
+    if (!signupName.trim()) {
+      setSignupError("Full Name is required")
       return
     }
+
+    if (!signupEmail.trim() || !signupEmail.includes('@')) {
+      setSignupError("Valid Email Address is required")
+      return
+    }
+
+    const phoneRegex = /^01[3-9]\d{8}$/;
+    if (!phoneRegex.test(signupPhone)) {
+      setPhoneError("Please enter a valid 11-digit number starting with 013-019");
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(signupPassword)) {
+      setPasswordError("Password must be at least 8 characters long and include uppercase, lowercase, numbers, and a special character.");
+      return;
+    }
+
     if (signupPassword !== signupConfirmPassword) {
-      setSignupError("Passwords do not match")
-      return
+      setPasswordError("Passwords do not match");
+      return;
     }
-    if (signupPassword.length < 6) {
-      setSignupError("Password must be at least 6 characters")
+
+    if (!agreedToTerms) {
+      setTermsError("Please agree to the Terms and Conditions")
       return
     }
     setLoading(true)
@@ -228,32 +246,42 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: signupName.trim(),
-          email: signupEmail.trim(),
+        body: JSON.stringify({ 
+          name: signupName.trim(), 
+          email: signupEmail.trim(), 
           password: signupPassword,
+          phone: signupPhone.trim()
         }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setSignupError(data.error || "Sign up failed")
+        const err = data.error?.toLowerCase() || "";
+        if (err.includes("email") || err.includes("exists")) {
+          setSignupError("Account with this email already exists");
+        } else if (err.includes("password")) {
+          setPasswordError(data.error || "Invalid password policy");
+        } else if (res.status === 429 || err.includes("too many")) {
+          setAuthMessage({ type: 'error', text: data.error || "Too many attempts. Please try again later." });
+        } else {
+          setSignupError(data.error || "Signup failed");
+        }
         return
       }
-      // Show verification screen
       setVerifyEmail(data.user.email)
       setVerificationStep("verify")
-      toast.success("Account created! Please check your email.")
+      setAuthMessage({ type: 'success', text: "Account created! Please check your email for verification code." })
     } catch {
-      setSignupError("Network error. Please try again.")
+      setAuthMessage({ type: 'error', text: "Network error. Please check your connection." })
     } finally {
       setLoading(false)
     }
   }
 
   const handleVerifyCode = async () => {
+    setAuthMessage(null)
     const fullCode = verifyCode.join("")
     if (fullCode.length !== 6) {
-      toast.error("Please enter the full 6-digit code")
+      setAuthMessage({ type: 'error', text: "Please enter the full 6-digit code" })
       return
     }
     setVerifyLoading(true)
@@ -265,15 +293,14 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Verification failed")
+        setAuthMessage({ type: 'error', text: data.error || "Verification failed" })
         return
       }
       const user: AuthUser = data.user
       login(user)
-      toast.success("Email verified successfully!")
       setView({ type: "home" })
     } catch {
-      toast.error("Network error. Please try again.")
+      setAuthMessage({ type: 'error', text: "Network error. Please try again." })
     } finally {
       setVerifyLoading(false)
     }
@@ -282,6 +309,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
   const handleResendCode = async () => {
     if (resendCooldown > 0) return
     setResendLoading(true)
+    setAuthMessage(null)
     try {
       const res = await fetch("/api/auth/send-verification", {
         method: "POST",
@@ -290,16 +318,15 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Failed to send code")
+        setAuthMessage({ type: 'error', text: data.error || "Failed to send code" })
         return
       }
-      toast.info("Verification code sent!", { duration: 5000 })
-      
+      setAuthMessage({ type: 'info', text: "Verification code sent! Please check your inbox." })
       setResendCooldown(60)
       setVerifyCode(["", "", "", "", "", ""])
       otpRefs.current[0]?.focus()
     } catch {
-      toast.error("Network error. Please try again.")
+      setAuthMessage({ type: 'error', text: "Network error. Please try again." })
     } finally {
       setResendLoading(false)
     }
@@ -313,8 +340,15 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
   }
 
   const handleForgotPassword = async () => {
-    if (!signinEmail.trim()) {
-      toast.error("Please enter your email in the box above first")
+    changeAuthMode('forgot-password');
+  }
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthMessage(null)
+    setSigninError(null)
+    if (!signinEmail.trim() || !signinEmail.includes('@')) {
+      setSigninError("Please enter a valid email address")
       return
     }
     setForgotLoading(true)
@@ -330,22 +364,23 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
         return
       }
       setResetEmail(signinEmail.trim())
-      changeAuthMode('forgot-password')
-      toast.info("A security code has been sent to your email")
+      setVerificationStep('forgot-verify')
+      setAuthMessage({ type: 'info', text: "A security code has been sent to your email" })
     } catch {
-      toast.error("Network error")
+      setSigninError("Network error")
     } finally {
       setForgotLoading(false)
     }
   }
 
   const handleVerifyResetCode = async () => {
+    setAuthMessage(null)
     const fullCode = resetCode.join("")
     if (fullCode.length !== 6) {
-      toast.error("Please enter the 6-digit code")
+      setForgotError("Please enter the 6-digit code")
       return
     }
-    
+
     setForgotLoading(true)
     setForgotError(null)
     try {
@@ -369,12 +404,17 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters")
-      return
+    setAuthMessage(null)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      setAuthMessage({ 
+        type: 'error', 
+        text: "Password must be at least 8 characters long and include uppercase, lowercase, numbers, and a special character." 
+      });
+      return;
     }
     if (newPassword !== newPasswordConfirm) {
-      toast.error("Passwords do not match")
+      setAuthMessage({ type: 'error', text: "Passwords do not match" })
       return
     }
 
@@ -391,14 +431,14 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
       })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || "Failed to reset password")
+        setAuthMessage({ type: 'error', text: data.error || "Failed to reset password" })
         return
       }
-      toast.success("Security key updated! Please log in.")
+      setAuthMessage({ type: 'success', text: "Security key updated! Please log in." })
       setVerificationStep(null)
       setSigninPassword("")
     } catch {
-      toast.error("Network error")
+      setAuthMessage({ type: 'error', text: "Network error" })
     } finally {
       setLoading(false)
     }
@@ -434,9 +474,9 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
             className="group relative"
           >
             <div className="absolute inset-0 animate-pulse rounded-3xl bg-blue-600/10 blur-2xl transition-all group-hover:bg-blue-600/20" />
-            <img 
-              src="/images/logo-premium.png" 
-              alt="SayShop Logo" 
+            <img
+              src="/images/logo-premium.png"
+              alt="SayShop Logo"
               className="relative h-24 w-auto drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
             />
           </motion.div>
@@ -457,7 +497,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
           {verificationStep === 'verify' ? (
             /* ── Registration / 2FA Verification Step ── */
             <motion.div
-              key="verify"
+              key="verify-step"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -473,6 +513,18 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                     Please enter the code sent to{" "}
                     <span className="font-bold text-foreground block mt-1">{verifyEmail}</span>
                   </CardDescription>
+                  {authMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mt-4 p-3 rounded-xl text-xs font-bold border ${authMessage.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                        authMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}
+                    >
+                      {authMessage.text}
+                    </motion.div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-8 pt-8">
                   <div className="flex justify-center gap-2 sm:gap-3">
@@ -495,11 +547,11 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                   <div className="space-y-4">
                     <Button
                       onClick={handleVerifyCode}
-                      className="w-full h-14 rounded-2xl bg-blue-700 text-white hover:bg-orange-700 shadow-lg shadow-blue-700/20 text-md font-bold transition-all hover:scale-[1.01] active:scale-[0.99]"
+                      className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99]"
                       size="lg"
                       disabled={verifyLoading || verifyCode.join("").length !== 6}
                     >
-                      {verifyLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Verify & Continue"}
+                      {verifyLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Verify & Continue"}
                     </Button>
 
                     <div className="text-center">
@@ -527,10 +579,83 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                 </CardContent>
               </Card>
             </motion.div>
+          ) : verificationStep === 'forgot-request' ? (
+            /* ── Forgot Password: Email Request Step ── */
+            <motion.div
+              key="forgot-request-step"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <Card className="border-border/40 bg-background/60 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden">
+                <CardHeader className="text-center border-b border-border/40 bg-zinc-50/50 dark:bg-zinc-900/50">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-900/20 text-blue-600">
+                    <RefreshCw className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-xl font-black uppercase tracking-tight">Recover Password</CardTitle>
+                  <CardDescription className="px-6 italic">Enter your account email to receive a secure recovery code.</CardDescription>
+                  {authMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mx-6 mt-4 p-3 rounded-xl text-xs font-bold border ${authMessage.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                        authMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}
+                    >
+                      {authMessage.text}
+                    </motion.div>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-6 pt-8">
+                  <form onSubmit={handleRequestReset} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="text-sm font-bold ml-1">Email Address</Label>
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
+                          <Mail className="h-4 w-4" />
+                        </div>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="your-email@example.com"
+                          value={signinEmail}
+                          onChange={(e) => setSigninEmail(e.target.value)}
+                          className="h-12 pl-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
+                          required
+                        />
+                      </div>
+                      {signinError && (
+                        <p className="text-[11px] font-bold text-red-500 ml-1">{signinError}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                      {forgotLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Reset Code"}
+                    </Button>
+                  </form>
+
+                  <div className="pt-2 border-t border-border/40">
+                    <button
+                      onClick={() => setView({ type: 'auth', authMode: 'signin' })}
+                      className="flex items-center gap-2 mx-auto py-2 text-sm font-semibold text-muted-foreground transition-all hover:text-foreground focus-visible:outline-none"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Login
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ) : verificationStep === 'forgot-verify' ? (
             /* ── Forgot Password: Code Entry Step ── */
             <motion.div
-              key="forgot-verify"
+              key="forgot-verify-step"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -542,6 +667,18 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                   </div>
                   <CardTitle className="text-xl font-black uppercase tracking-tight">Identity Check</CardTitle>
                   <CardDescription className="px-6">Enter the reset code sent to your email.</CardDescription>
+                  {authMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mx-6 mt-4 p-3 rounded-xl text-xs font-bold border ${authMessage.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                        authMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}
+                    >
+                      {authMessage.text}
+                    </motion.div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6 pt-8">
                   <div className="flex justify-center gap-2">
@@ -558,14 +695,14 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           const newCode = [...resetCode];
                           newCode[index] = val;
                           setResetCode(newCode);
-                          if(val && index < 5) resetOtpRefs.current[index + 1]?.focus();
+                          if (val && index < 5) resetOtpRefs.current[index + 1]?.focus();
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Backspace" && !resetCode[index] && index > 0) {
                             resetOtpRefs.current[index - 1]?.focus()
                           }
                         }}
-                        className="h-14 w-11 rounded-xl text-center text-xl font-bold border-zinc-200 dark:border-zinc-800"
+                        className="h-14 w-11 rounded-xl text-center text-xl font-bold border-border/80 bg-muted/30 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all shadow-sm"
                       />
                     ))}
                   </div>
@@ -583,10 +720,9 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                   <Button
                     onClick={handleVerifyResetCode}
                     disabled={forgotLoading}
-                    className="w-full h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 uppercase font-black text-xs tracking-widest flex items-center justify-center gap-2"
+                    className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] mt-2"
                   >
-                    {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Confirm Code
+                    {forgotLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm Code"}
                   </Button>
                   <button onClick={handleBackToSignIn} className="w-full text-center text-xs font-bold text-zinc-500 hover:text-zinc-800 flex items-center justify-center gap-2">
                     <ArrowLeft className="h-3 w-3" /> Cancel Reset
@@ -597,47 +733,96 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
           ) : verificationStep === 'forgot-update' ? (
             /* ── Forgot Password: New Password Step ── */
             <motion.div
-              key="forgot-update"
+              key="forgot-update-step"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
             >
               <Card className="border-border/40 bg-background/60 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden">
                 <CardHeader className="text-center border-b border-border/40 bg-zinc-50/50 dark:bg-zinc-900/50">
-                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600">
                     <ShieldCheck className="h-6 w-6" />
                   </div>
                   <CardTitle className="text-xl font-black uppercase tracking-tight">Update Credentials</CardTitle>
-                  <CardDescription>Enter your new secure access key.</CardDescription>
+                  <CardDescription>Secure your account with a new master key.</CardDescription>
+                  {authMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`mx-6 mt-4 p-3 rounded-xl text-xs font-bold border ${authMessage.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                        authMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}
+                    >
+                      {authMessage.text}
+                    </motion.div>
+                  )}
                 </CardHeader>
-                <CardContent className="space-y-4 pt-8">
-                  <div className="space-y-2">
-                    <Label className="font-bold text-xs uppercase tracking-widest">New Security Key</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="Min. 6 characters" 
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      className="h-12 rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-bold text-xs uppercase tracking-widest">Confirm Key</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="Repeat your new key" 
-                      value={newPasswordConfirm}
-                      onChange={e => setNewPasswordConfirm(e.target.value)}
-                      className="h-12 rounded-xl"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleUpdatePassword}
-                    disabled={loading}
-                    className="w-full h-13 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 uppercase font-black text-xs tracking-widest mt-4"
-                  >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save New Credentials"}
-                  </Button>
+                <CardContent className="pt-8">
+                  <form onSubmit={handleUpdatePassword} className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password" title="update-password-label" className="text-sm font-bold ml-1">New Security Key</Label>
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
+                          <Lock className="h-4 w-4" />
+                        </div>
+                        <Input
+                          id="new-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Min. 8 characters"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          className="h-12 pl-11 pr-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-blue-600 transition-colors focus-visible:outline-none"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password" title="update-password-label-confirm" className="text-sm font-bold ml-1">Confirm Security Key</Label>
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
+                          <ShieldCheck className="h-4 w-4" />
+                        </div>
+                        <Input
+                          id="confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Repeat your new key"
+                          value={newPasswordConfirm}
+                          onChange={e => setNewPasswordConfirm(e.target.value)}
+                          className="h-12 pl-11 pr-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-blue-600 transition-colors focus-visible:outline-none"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] mt-4"
+                    >
+                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save New Credentials"}
+                    </Button>
+                    <button 
+                      type="button"
+                      onClick={handleBackToSignIn} 
+                      className="w-full text-center text-xs font-bold text-zinc-500 hover:text-zinc-800 flex items-center justify-center gap-2 mt-2"
+                    >
+                      <ArrowLeft className="h-3 w-3" /> Back to Login
+                    </button>
+                  </form>
                 </CardContent>
               </Card>
             </motion.div>
@@ -660,14 +845,27 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                   </div>
 
                   <CardContent className="pt-8">
+                    {authMessage && (activeTab === 'signin' || activeTab === 'signup') && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className={`mb-6 p-4 rounded-2xl text-xs font-bold border flex items-center gap-3 ${authMessage.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                          authMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                            'bg-blue-50 text-blue-600 border-blue-200'
+                          }`}
+                      >
+                        <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+                        {authMessage.text}
+                      </motion.div>
+                    )}
                     {/* ── Sign In Tab ── */}
                     <TabsContent value="signin" className="space-y-6 mt-0 outline-none">
                       <form onSubmit={handleSignIn} className="space-y-5">
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                           <Label htmlFor="signin-email" className="text-sm font-bold ml-1">Email Address</Label>
                           <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
-                             <Mail className="h-4 w-4" />
+                              <Mail className="h-4 w-4" />
                             </div>
                             <Input
                               id="signin-email"
@@ -690,7 +888,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           )}
                         </div>
 
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                           <div className="flex items-center justify-between ml-1">
                             <Label htmlFor="signin-password" className="text-sm font-bold">Password</Label>
                             <button
@@ -705,7 +903,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           </div>
                           <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
-                               <Lock className="h-4 w-4" />
+                              <Lock className="h-4 w-4" />
                             </div>
                             <Input
                               id="signin-password"
@@ -728,7 +926,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
 
                         <Button
                           type="submit"
-                          className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] mt-2 group"
+                          className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] mt-4 group"
                           size="lg"
                           disabled={loading}
                         >
@@ -736,7 +934,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
                             <span className="flex items-center gap-2">
-                              Access Account
+                              Signin
                               <ShieldCheck className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                             </span>
                           )}
@@ -757,28 +955,29 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           type="button"
                           variant="outline"
                           onClick={() => window.location.href = '/api/auth/google'}
-                          className="w-full h-12 rounded-xl border border-border/80 bg-background/50 backdrop-blur-sm text-foreground hover:bg-background/80 shadow-sm text-sm font-bold transition-all"
+                          className="w-full h-12 rounded-2xl border border-border/60 bg-background/40 backdrop-blur-md text-foreground hover:bg-background/60 hover:border-blue-600/30 hover:shadow-lg hover:shadow-blue-600/5 shadow-sm text-sm font-bold transition-all group/google"
                         >
-                          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                            <path
-                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                              fill="#4285F4"
-                            />
-                            <path
-                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                              fill="#34A853"
-                            />
-                            <path
-                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                              fill="#FBBC05"
-                            />
-                            <path
-                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                              fill="#EA4335"
-                            />
-                            <path d="M1 1h22v22H1z" fill="none" />
-                          </svg>
-                          Sign in with Google
+                          <div className="flex items-center justify-center gap-3 w-full">
+                            <svg className="h-5 w-5 transition-transform duration-300 group-hover/google:scale-110" viewBox="0 0 24 24">
+                              <path
+                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                fill="#4285F4"
+                              />
+                              <path
+                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                fill="#34A853"
+                              />
+                              <path
+                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                fill="#FBBC05"
+                              />
+                              <path
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                fill="#EA4335"
+                              />
+                            </svg>
+                            <span>Continue with Google</span>
+                          </div>
                         </Button>
                       </form>
                     </TabsContent>
@@ -790,7 +989,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           <Label htmlFor="signup-name" className="text-sm font-bold ml-1">Full Name</Label>
                           <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
-                               <User className="h-4 w-4" />
+                              <User className="h-4 w-4" />
                             </div>
                             <Input
                               id="signup-name"
@@ -808,7 +1007,7 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           <Label htmlFor="signup-email" className="text-sm font-bold ml-1">Email Address</Label>
                           <div className="relative group">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
-                             <Mail className="h-4 w-4" />
+                              <Mail className="h-4 w-4" />
                             </div>
                             <Input
                               id="signup-email"
@@ -831,6 +1030,37 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           )}
                         </div>
 
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-phone" className="text-sm font-bold ml-1">Mobile Number</Label>
+                          <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600">
+                              <Smartphone className="h-4 w-4" />
+                            </div>
+                            <Input
+                              id="signup-phone"
+                              type="tel"
+                              placeholder="01XXXXXXXXX"
+                              value={signupPhone}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                                setSignupPhone(val);
+                                setPhoneError(null);
+                              }}
+                              className="h-12 pl-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
+                              required
+                            />
+                          </div>
+                          {phoneError && (
+                            <motion.p
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="text-xs font-bold text-red-500 mt-1.5 ml-1"
+                            >
+                              {phoneError}
+                            </motion.p>
+                          )}
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="signup-password" className="text-sm font-bold ml-1">Password</Label>
@@ -838,42 +1068,103 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                               <Input
                                 id="signup-password"
                                 type={showPassword ? "text" : "password"}
-                                placeholder="Min. 6"
+                                placeholder="Min. 8"
                                 value={signupPassword}
                                 onChange={(e) => setSignupPassword(e.target.value)}
-                                className="h-12 px-4 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all"
+                                className="h-12 pl-4 pr-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
                                 required
                               />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-blue-600 transition-colors focus-visible:outline-none"
+                              >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="signup-confirm" className="text-sm font-bold ml-1">Confirm</Label>
+                            <Label htmlFor="signup-confirm" className="text-sm font-bold ml-1">Confirm Password</Label>
                             <div className="relative group">
-                               <Input
+                              <Input
                                 id="signup-confirm"
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="Match password"
                                 value={signupConfirmPassword}
                                 onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                                className="h-12 px-4 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all"
+                                className="h-12 pl-4 pr-11 rounded-2xl border-border/80 bg-background/50 focus-visible:bg-background focus-visible:border-blue-600 focus-visible:ring-blue-600/20 transition-all font-medium"
                                 required
                               />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-blue-600 transition-colors focus-visible:outline-none"
+                              >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
                             </div>
                           </div>
                         </div>
+                        {passwordError && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-[11px] sm:text-xs font-bold text-red-500 mb-2 ml-1 leading-tight"
+                          >
+                            {passwordError}
+                          </motion.p>
+                        )}
+                        <div className="flex items-start gap-3 py-1">
+                          <Checkbox
+                            id="terms"
+                            checked={agreedToTerms}
+                            onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                            className="mt-1 border-zinc-400 dark:border-white/60 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 shadow-sm transition-colors"
+                          />
+                          <Label
+                            htmlFor="terms"
+                            className="text-[11px] sm:text-[12px] leading-normal text-muted-foreground/70 cursor-pointer select-none inline"
+                          >
+                            I have read and agree to the{" "}
+                            <button
+                              type="button"
+                              onClick={() => setView({ type: 'info', slug: 'terms-and-conditions' })}
+                              className="inline text-foreground font-bold hover:text-blue-600 transition-colors underline underline-offset-4 decoration-border/60 hover:decoration-blue-600/40"
+                            >
+                              Terms of Service
+                            </button>
+                            {" "}and{" "}
+                            <button
+                              type="button"
+                              onClick={() => setView({ type: 'info', slug: 'shipping' })}
+                              className="inline text-foreground font-bold hover:text-blue-600 transition-colors underline underline-offset-4 decoration-border/60 hover:decoration-blue-600/40"
+                            >
+                              Privacy Framework
+                            </button>
+                          </Label>
+                        </div>
+                        {termsError && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-[11px] sm:text-xs font-bold text-red-500 mb-4 ml-1"
+                          >
+                            {termsError}
+                          </motion.p>
+                        )}
 
                         <Button
                           type="submit"
-                          className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] mt-4 group"
+                          className="w-full h-13 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xl shadow-zinc-900/10 dark:shadow-white/5 text-sm font-black uppercase tracking-[0.15em] transition-all hover:scale-[1.01] active:scale-[0.99] mt-4 group"
                           size="lg"
                           disabled={loading}
                         >
                           {loading ? (
-                             <Loader2 className="h-5 w-5 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <span className="flex items-center gap-2">
-                              Create Profile
-                              <ArrowLeft className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity rotate-180" />
+                            <span className="flex items-center gap-3">
+                              Signup
+                              <ArrowLeft className="h-4 w-4 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all rotate-180" />
                             </span>
                           )}
                         </Button>
@@ -893,38 +1184,34 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
                           type="button"
                           variant="outline"
                           onClick={() => window.location.href = '/api/auth/google'}
-                          className="w-full h-12 rounded-xl border border-border/80 bg-background/50 backdrop-blur-sm text-foreground hover:bg-background/80 shadow-sm text-sm font-bold transition-all"
+                          className="w-full h-12 rounded-2xl border border-border/60 bg-background/40 backdrop-blur-md text-foreground hover:bg-background/60 hover:border-blue-600/30 hover:shadow-lg hover:shadow-blue-600/5 shadow-sm text-sm font-bold transition-all group/google"
                         >
-                          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                            <path
-                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                              fill="#4285F4"
-                            />
-                            <path
-                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                              fill="#34A853"
-                            />
-                            <path
-                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                              fill="#FBBC05"
-                            />
-                            <path
-                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                              fill="#EA4335"
-                            />
-                            <path d="M1 1h22v22H1z" fill="none" />
-                          </svg>
-                          Sign up with Google
+                          <div className="flex items-center justify-center gap-3 w-full">
+                            <svg className="h-5 w-5 transition-transform duration-300 group-hover/google:scale-110" viewBox="0 0 24 24">
+                              <path
+                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                fill="#4285F4"
+                              />
+                              <path
+                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                fill="#34A853"
+                              />
+                              <path
+                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                fill="#FBBC05"
+                              />
+                              <path
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                fill="#EA4335"
+                              />
+                            </svg>
+                            <span>Continue with Google</span>
+                          </div>
                         </Button>
                       </form>
                     </TabsContent>
 
-                    <div className="mt-8 pt-6 border-t border-border/40 text-center">
-                      <div className="flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground/80">
-                        <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                        <span>256-bit SSL Secure Encryption</span>
-                      </div>
-                    </div>
+
                   </CardContent>
                 </Tabs>
               </Card>
@@ -935,9 +1222,19 @@ export function AuthPage({ prefilledEmail, authMode }: { prefilledEmail?: string
         {/* Footer text */}
         <p className="mt-10 text-center text-[11px] text-muted-foreground/60 font-medium uppercase tracking-widest leading-relaxed">
           Secure access signifies agreement to our <br className="sm:hidden" />
-          <span className="text-zinc-500 dark:text-zinc-400 hover:text-blue-600 transition-colors cursor-pointer underline underline-offset-4">Terms of Service</span>
+          <button
+            onClick={() => setView({ type: 'info', slug: 'terms-and-conditions' })}
+            className="text-zinc-500 dark:text-zinc-400 hover:text-blue-600 transition-colors cursor-pointer underline underline-offset-4 uppercase"
+          >
+            Terms of Service
+          </button>
           {" "} & {" "}
-          <span className="text-zinc-500 dark:text-zinc-400 hover:text-blue-600 transition-colors cursor-pointer underline underline-offset-4">Privacy Framework</span>
+          <button
+            onClick={() => setView({ type: 'info', slug: 'shipping' })}
+            className="text-zinc-500 dark:text-zinc-400 hover:text-blue-600 transition-colors cursor-pointer underline underline-offset-4 uppercase"
+          >
+            Privacy Framework
+          </button>
         </p>
       </div>
     </main>

@@ -22,6 +22,7 @@ import type { Product, ProductImage } from "@/lib/types"
 import { toast } from "sonner"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
+import { WishlistCartIcon } from "@/components/ui/custom-icons"
 
 export function WishlistPage() {
   const items = useWishlistStore((s) => s.items)
@@ -124,7 +125,7 @@ export function WishlistPage() {
       {/* Page Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Heart className="h-6 w-6 text-red-500 fill-red-500" />
+          <WishlistCartIcon className="h-6 w-6 text-blue-600" />
           <h1 className="text-2xl font-bold sm:text-3xl">My Wishlist</h1>
           <Badge variant="secondary" className="ml-1 text-xs font-medium">
             {items.length} item{items.length !== 1 ? "s" : ""}
@@ -209,7 +210,7 @@ export function WishlistPage() {
           className="flex flex-col items-center justify-center py-16 text-center"
         >
           <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-            <Heart className="h-12 w-12 text-muted-foreground" />
+            <WishlistCartIcon className="h-12 w-12 text-muted-foreground" />
           </div>
           <h2 className="mb-2 text-xl font-semibold">Your wishlist is empty</h2>
           <p className="mb-6 max-w-sm text-muted-foreground">

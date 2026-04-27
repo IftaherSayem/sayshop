@@ -246,7 +246,11 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
     async function fetchProduct() {
       setLoading(true);
       try {
-        // Use slug lookup if no productId but slug is provided
+        // Avoid hitting base listing API if both ID and slug are missing
+        if (!productId && !productSlug) {
+          throw new Error('Product identifier missing');
+        }
+
         const apiUrl = productSlug && !productId
           ? `/api/products/slug/${encodeURIComponent(productSlug)}`
           : `/api/products/${productId}`;
@@ -1347,7 +1351,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                       </TableRow>
                       <TableRow className="even:bg-muted/30">
                         <TableCell className="text-muted-foreground font-medium">SKU</TableCell>
-                        <TableCell className="font-medium">{product.id.substring(0, 8).toUpperCase()}</TableCell>
+                        <TableCell className="font-medium">{product.id?.substring(0, 8).toUpperCase() || 'N/A'}</TableCell>
                       </TableRow>
                       {isElectronics && (
                         <>
@@ -1375,7 +1379,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                     ['Availability', product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'],
                     ['Rating', `${product.rating} / 5 (${product.reviewCount} reviews)`],
                     ['Tags', tags.length > 0 ? tags.join(', ') : 'None'],
-                    ['SKU', product.id.substring(0, 8).toUpperCase()],
+                    ['SKU', product.id?.substring(0, 8).toUpperCase() || 'N/A'],
                     ...(isElectronics ? [['Warranty', '1 Year Manufacturer Warranty'] as const, ['Return Policy', '30 Days Free Returns'] as const] : []),
                   ].map(([key, value]) => (
                     <div key={key} className="flex justify-between py-3 px-4 even:bg-muted/30">
@@ -1395,7 +1399,7 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
                   <MessageCircleQuestion className="h-5 w-5 text-blue-600" />
                   <h3 className="text-lg font-semibold">Questions & Answers</h3>
                 </div>
-                <ProductQA productId={product.id} />
+                <ProductQA productId={product.id || ''} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -1653,13 +1657,13 @@ export function ProductDetail({ productId, productSlug }: ProductDetailProps) {
       {product.categoryId && (
         <FrequentlyBoughtTogether
           categoryId={product.categoryId}
-          productId={product.id}
+          productId={product.id || ''}
         />
       )}
 
       {/* Product Video Section */}
       <ProductVideoSection
-        productId={product.id}
+        productId={product.id || ''}
         productName={product.name}
       />
 

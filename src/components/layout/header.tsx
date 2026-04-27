@@ -37,9 +37,11 @@ import {
   Package,
   LogOut,
   Shield,
+  LayoutGrid,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { motion, AnimatePresence } from "framer-motion"
+import { WishlistCartIcon } from "@/components/ui/custom-icons"
 import { formatPrice } from "@/lib/types"
 import type { Category, Product } from "@/lib/types"
 import { NotificationDropdown } from "@/components/layout/notification-dropdown"
@@ -260,7 +262,9 @@ export function Header() {
           </div>
         ) : suggestions.length === 0 && searchInput.trim() ? (
           <div className="flex flex-col items-center gap-2 py-6 text-muted-foreground">
-            <SearchX className="h-8 w-8 opacity-40" />
+            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
+              <WishlistCartIcon className="h-12 w-12 text-muted-foreground" />
+            </div>
             <span className="text-sm">No products found</span>
           </div>
         ) : (
@@ -314,7 +318,7 @@ export function Header() {
 
   return (
     <>
-      <div className="h-14 sm:h-16 lg:h-[104px] w-full" /> {/* Spacer for fixed header */}
+      <div className="h-14 sm:h-16 w-full" /> {/* Spacer for fixed header */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full animate-in fade-in duration-500">
       {/* ===== Main Bar ===== */}
       <div className={`border-b bg-background transition-all duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md shadow-sm' : ''}`}>
@@ -330,16 +334,53 @@ export function Header() {
               <Menu className="h-5 w-5" />
             </button>
   
-            {/* Logo */}
             <button
               onClick={navigateHome}
-              className="flex shrink-0 items-center gap-2.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+              className="flex shrink-0 items-center gap-3 transition-all hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg group"
             >
-              <Image src="/images/logo-premium.png" alt="Say Shop" width={60} height={40} className="h-10 w-auto rounded-lg object-contain" />
-              <span className="hidden sm:inline-block text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 sm:text-xl">
-                Say Shop
-              </span>
+              <Image 
+                src="/images/logo-premium.png" 
+                alt="Say Shop" 
+                width={48} 
+                height={48} 
+                className="h-12 w-auto object-contain transition-transform group-hover:scale-105" 
+                priority
+              />
+              <div className="hidden sm:flex flex-col items-start justify-center leading-none">
+                <span className="text-xl font-black tracking-tighter text-zinc-900 dark:text-white uppercase italic">
+                  Say<span className="text-blue-600 font-light not-italic">Shop</span>
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-zinc-400 mt-0.5">Elite Retail</span>
+              </div>
             </button>
+  
+            {/* Categories Dropdown - Desktop Only */}
+            <div className="hidden lg:block ml-2">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 h-10 px-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all font-semibold text-neutral-700 dark:text-neutral-200">
+                    <LayoutGrid className="h-4 w-4 text-blue-600" />
+                    <span>Categories</span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 p-2 rounded-2xl shadow-xl border-border/40 backdrop-blur-md">
+                  <DropdownMenuItem onClick={() => navigateToProducts()} className="rounded-xl px-3 py-2.5 cursor-pointer font-medium hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                    All Products
+                  </DropdownMenuItem>
+                  <div className="my-1 h-px bg-border/50" />
+                  {categories.map((cat) => (
+                    <DropdownMenuItem 
+                      key={cat.id} 
+                      onClick={() => navigateToProducts(cat.id, cat.slug)}
+                      className="rounded-xl px-3 py-2.5 cursor-pointer text-neutral-600 dark:text-neutral-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-colors"
+                    >
+                      {cat.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Center: Search Bar — hidden on mobile, shown in Sheet instead */}
@@ -397,7 +438,7 @@ export function Header() {
                   aria-label="Wishlist"
                   onClick={() => setView({ type: "wishlist" })}
                 >
-                  <Heart className="h-5 w-5" />
+                  <WishlistCartIcon className="h-5 w-5" />
                   {wishlistItems.length > 0 && (
                     <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 p-0 text-[10px] font-bold text-white border-0">
                       {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
@@ -536,33 +577,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* ===== Categories Bar ===== */}
-      {categories.length > 0 && (
-        <nav className="hidden border-b bg-neutral-50 dark:bg-neutral-900/50 lg:block">
-          <div className="mx-auto max-w-7xl px-4">
-            <ul className="flex items-center gap-1 overflow-x-auto py-2" style={{ scrollbarWidth: "none" }}>
-              <li>
-                <button
-                  onClick={() => navigateToProducts()}
-                  className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                >
-                  All Products
-                </button>
-              </li>
-              {categories.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    onClick={() => navigateToProducts(cat.id, cat.slug)}
-                    className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-400 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                  >
-                    {cat.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </nav>
-      )}
+      {/* Categories Bar Removed and consolidated into dropdown */}
 
       {/* ===== Mobile Menu Sheet ===== */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -671,7 +686,7 @@ export function Header() {
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-neutral-300 dark:hover:bg-orange-950 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 >
-                  <Heart className="h-4 w-4" />
+                  <WishlistCartIcon className="h-5 w-5" />
                   Wishlist
                   {wishlistItems.length > 0 && (
                     <Badge className="ml-auto h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white border-0">

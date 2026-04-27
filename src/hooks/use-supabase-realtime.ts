@@ -29,7 +29,7 @@ export function useSupabaseRealtime({
     if (!enabled) return
 
     const supabase = createSupabaseBrowserClient()
-    const channelName = `realtime-${table}-${filter || 'all'}`
+    const channelName = `realtime-${table}-${filter || 'all'}-${Math.random().toString(36).slice(2, 11)}`
 
     const channel = supabase
       .channel(channelName)

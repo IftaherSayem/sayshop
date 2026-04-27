@@ -56,6 +56,7 @@ import {
 import { toast } from "sonner"
 import { BkashLogo, NagadLogo, RocketLogo, GPayLogo } from "@/components/payment/payment-logos"
 import { REWARDS_CONFIG, calculatePointsEarned, pointsToValue } from "@/lib/rewards"
+import { CartAddIcon } from "@/components/ui/custom-icons"
 
 // ── Zod Schemas ────────────────────────────────────────────────────
 const shippingSchema = z.object({
@@ -499,7 +500,7 @@ export function CheckoutPage() {
           </nav>
           <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-16 text-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+              <CartAddIcon className="h-12 w-12 text-muted-foreground" />
             </div>
             <h2 className="text-xl font-semibold">Your cart is empty</h2>
             <p className="max-w-md text-sm text-muted-foreground">

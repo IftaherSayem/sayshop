@@ -86,18 +86,35 @@ function isSuspiciousUserAgent(ua: string | null): boolean {
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
+  // ── Admin/Manager Path Protection ──
+  const isProtectedPath =
+    request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/manager')
+
+  if (isProtectedPath) {
+    const sessionToken = request.cookies.get('sayshop_session')?.value
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL('/auth/signin', request.url))
+    }
+  }
+
   const response = NextResponse.next({
     request,
   })
 
-  // ── Security headers ──
+  // ── Hardened Security Headers ──
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' data: *.supabase.co images.unsplash.com res.cloudinary.com; font-src 'self' fonts.gstatic.com; connect-src 'self' *.supabase.co; frame-ancestors 'none';"
+  )
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=()'
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   )
 
   // ── Rate limiting for POST requests to API routes ──

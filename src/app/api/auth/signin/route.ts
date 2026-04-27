@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { Resend } from 'resend'
 import {
   verifyPassword,
   createSession,
@@ -22,7 +23,7 @@ const MAX_FAILED_ATTEMPTS = 5
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 const failedAttempts = new Map<string, FailedAttempt>()
 
-function getClientIp(request: NextRequest): string {
+export function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) return forwarded.split(',')[0].trim()
   const realIp = request.headers.get('x-real-ip')
@@ -163,12 +164,20 @@ export async function POST(request: NextRequest) {
       .update({ last_login: new Date().toISOString() })
       .eq('id', user.id)
 
-    // ── Check if 2FA is enabled in profile settings ─────────
+    // ── Fetch profile for name and phone ───────────────────
     const { data: profile } = await supabase
       .from('profiles')
-      .select('address')
+      .select('full_name, phone, address')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    const { data: roleData } = await supabase
+      .from('roles')
+      .select('name')
+      .eq('id', user.role_id)
+      .maybeSingle();
+
+    const roleName = (roleData?.name || 'customer').toUpperCase();
 
     const settings = (profile?.address as any)?.settings || {};
     const is2FAEnabled = settings.twoFactorEnabled === true;
@@ -188,6 +197,9 @@ export async function POST(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
+          name: profile?.full_name || user.email,
+          phone: profile?.phone || null,
+          role: roleName,
         },
         requires2FA: false
       });
@@ -215,43 +227,39 @@ export async function POST(request: NextRequest) {
 
     // ── Dispatch Email via Resend ───────────────────────────
     if (process.env.RESEND_API_KEY) {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      console.log(`[Resend] Attempting to send login 2FA to: ${user.email.toLowerCase()}`);
-      const { error: emailError } = await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: user.email.toLowerCase(),
-        subject: 'Your SayShop Login Authentication Code',
-        html: `
-          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="background-color: #2563EB; padding: 24px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
-            </div>
-            <div style="padding: 32px; text-align: center; background-color: #ffffff;">
-              <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">2FA Login Attempt</h2>
-              <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
-                We detected a login attempt using your email. Please enter the following secure 6-digit code to securely complete your login. This code will expire in 10 minutes.
-              </p>
-              <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1D4ED8; margin-bottom: 24px;">
-                ${verificationCode}
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        console.log(`[Resend] Attempting to send login 2FA in background to: ${user.email.toLowerCase()}`);
+        resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: user.email.toLowerCase(),
+          subject: 'Your SayShop Login Authentication Code',
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <div style="background-color: #2563EB; padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
               </div>
-              <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
-                If this wasn't you, your password may be compromised. Please consider changing it immediately.
-              </p>
+              <div style="padding: 32px; text-align: center; background-color: #ffffff;">
+                <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">2FA Login Attempt</h2>
+                <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
+                  We detected a login attempt using your email. Please enter the following secure 6-digit code to securely complete your login. This code will expire in 10 minutes.
+                </p>
+                <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #1D4ED8; margin-bottom: 24px;">
+                  ${verificationCode}
+                </div>
+                <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
+                  If this wasn't you, your password may be compromised. Please consider changing it immediately.
+                </p>
+              </div>
             </div>
-          </div>
-        `
-      });
-
-      if (emailError) {
-        console.error('[signin] Send error detail:', JSON.stringify(emailError, null, 2));
-        return NextResponse.json(
-          { error: `2FA Email Failed: ${emailError.message || 'Unknown Reason'}` },
-          { status: 500 }
-        )
-      } else {
-        console.log(`[Resend] Successfully dispatched 2FA email to ${user.email}`);
+          `
+        }).then(({ data, error }) => {
+          if (error) console.error('[signin] Background 2FA Error:', error);
+          else console.log(`[Resend] 2FA email sent in background: ${data?.id}`);
+        }).catch(err => console.error('[signin] Background 2FA Exception:', err));
+      } catch (err: any) {
+        console.error('[signin] Resend Setup Exception:', err.message || err);
       }
     } else {
       console.log(`[Development Leak] 2FA Code for ${user.email}: ${verificationCode}`);

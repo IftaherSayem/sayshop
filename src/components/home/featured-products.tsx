@@ -20,7 +20,6 @@ export function FeaturedProducts() {
   // Realtime refetch for featured products
   useRealtimeRefetch({
     table: 'products',
-    filter: 'is_featured=eq.true',
     enabled: true,
     refetch: useCallback(() => setRealtimeTick((t) => t + 1), []),
   });
@@ -113,7 +112,7 @@ export function FeaturedProducts() {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  className="min-w-[calc(50%-0.5rem)] sm:min-w-[calc(33.333%-0.667rem)] md:min-w-[calc(20%-0.8rem)] snap-start flex-shrink-0"
+                  className="w-[200px] sm:w-[220px] md:w-[240px] snap-start flex-shrink-0"
                 >
                   <ProductCard product={product} />
                 </div>

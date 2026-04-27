@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { useUIStore } from "@/stores/ui-store";
 import type { Category } from "@/lib/types";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRealtimeRefetch } from "@/hooks/use-supabase-realtime";
 
 interface CategoryWithCount extends Category {
   productCount: number;
@@ -28,7 +29,15 @@ const itemVariants = {
 export function CategoryGrid() {
   const [categories, setCategories] = useState<CategoryWithCount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [realtimeTick, setRealtimeTick] = useState(0);
   const setView = useUIStore((s) => s.setView);
+
+  // Realtime refetch for categories
+  useRealtimeRefetch({
+    table: 'categories',
+    enabled: true,
+    refetch: useCallback(() => setRealtimeTick((t) => t + 1), []),
+  });
 
   useEffect(() => {
     async function fetchCategories() {
@@ -45,7 +54,7 @@ export function CategoryGrid() {
       }
     }
     fetchCategories();
-  }, []);
+  }, [realtimeTick]);
 
   if (loading) {
     return (

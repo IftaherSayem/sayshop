@@ -96,12 +96,12 @@ function DealProductCard({ product }: DealProductCardProps) {
       className="group cursor-pointer overflow-hidden border border-border/50 py-0 gap-0 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full"
       onClick={() => setView({ type: "product-detail", productId: product.id })}
     >
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-neutral-50 dark:bg-neutral-900/50">
         <Image
           src={images[0]?.url || "/images/products/headphones.png"}
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
         {discount > 0 && (
@@ -121,7 +121,7 @@ function DealProductCard({ product }: DealProductCardProps) {
         </div>
       </div>
       <CardContent className="p-3">
-        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors">
+        <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors h-10">
           {product.name}
         </h3>
         <div className="flex items-center gap-1 mb-2">

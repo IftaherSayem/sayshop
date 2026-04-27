@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   name: string
   role: string
+  phone?: string | null
 }
 
 interface AuthStore {
@@ -36,7 +37,13 @@ export const useAuthStore = create<AuthStore>()(
 
       setUser: (user: AuthUser | null) => {
         set({
-          user,
+          user: user ? {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone || null,
+            role: user.role,
+          } : null,
           isAuthenticated: !!user,
         })
       },

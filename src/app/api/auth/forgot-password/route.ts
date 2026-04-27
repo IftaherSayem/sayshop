@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { Resend } from 'resend'
 
 /**
  * POST /api/auth/forgot-password
@@ -55,37 +56,39 @@ export async function POST(request: NextRequest) {
     // 4. Send Email via Resend
     const resendApiKey = process.env.RESEND_API_KEY
     if (resendApiKey) {
-      const { Resend } = await import('resend')
-      const resend = new Resend(resendApiKey)
+      try {
+        const resend = new Resend(resendApiKey)
 
-      const { error: emailError } = await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: user.email,
-        subject: 'Reset Your SayShop Password',
-        html: `
-          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <div style="background-color: #000000; padding: 24px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
-            </div>
-            <div style="padding: 32px; text-align: center; background-color: #ffffff;">
-              <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">Password Reset Request</h2>
-              <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
-                We received a request to reset your password. Use the following secure 6-digit code to complete the process. This code expires in 15 minutes.
-              </p>
-              <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #000000; margin-bottom: 24px;">
-                ${resetCode}
+        console.log(`[Forgot-Password] Attempting to send reset email in background to: ${user.email}`);
+        resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: user.email,
+          subject: 'Reset Your SayShop Password',
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <div style="background-color: #000000; padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">SayShop</h1>
               </div>
-              <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
-                If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
-              </p>
+              <div style="padding: 32px; text-align: center; background-color: #ffffff;">
+                <h2 style="color: #111827; font-size: 20px; font-weight: 600; margin-top: 0;">Password Reset Request</h2>
+                <p style="color: #4B5563; font-size: 15px; line-height: 1.5; margin-bottom: 24px;">
+                  We received a request to reset your password. Use the following secure 6-digit code to complete the process. This code expires in 15 minutes.
+                </p>
+                <div style="background-color: #F3F4F6; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #000000; margin-bottom: 24px;">
+                  ${resetCode}
+                </div>
+                <p style="color: #9CA3AF; font-size: 13px; margin: 0;">
+                  If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
+                </p>
+              </div>
             </div>
-          </div>
-        `
-      })
-
-      if (emailError) {
-        console.error('[forgot-password] Resend Error:', emailError)
-        return NextResponse.json({ error: 'Failed to send reset email' }, { status: 500 })
+          `
+        }).then(({ data, error }) => {
+          if (error) console.error('[forgot-password] Background Resend Error:', error);
+          else console.log(`[Forgot-Password] Reset email sent in background: ${data?.id}`);
+        }).catch(err => console.error('[forgot-password] Background Resend Exception:', err));
+      } catch (sendError: any) {
+        console.error('[forgot-password] Resend Setup Error:', sendError.message || sendError)
       }
     } else {
       console.log(`[Dev Mode] Password Reset Code for ${user.email}: ${resetCode}`)

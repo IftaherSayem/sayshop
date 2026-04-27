@@ -100,7 +100,7 @@ export interface CartItem {
 // View types for client-side routing
 export type AppView =
   | { type: "home" }
-  | { type: "products"; categoryId?: string; categorySlug?: string; search?: string; sort?: string; minPrice?: number; maxPrice?: number }
+  | { type: "products"; categoryId?: string; categorySlug?: string; search?: string; sort?: string; minPrice?: number; maxPrice?: number; page?: number }
   | { type: "product-detail"; productId: string; productSlug?: string; categorySlug?: string }
   | { type: "cart" }
   | { type: "checkout" }
@@ -111,7 +111,8 @@ export type AppView =
   | { type: "compare" }
   | { type: "profile"; id?: string }
   | { type: "auth"; prefilledEmail?: string; authMode?: 'signin' | 'signup' | 'forgot-password' | 'reset-password' }
-  | { type: "admin"; role?: string };
+  | { type: "admin"; role?: string }
+  | { type: "info"; slug: string };
 
 /**
  * Convert an AppView to a shareable browser URL path.
@@ -132,6 +133,7 @@ export function viewToUrl(view: AppView): string {
       
       if (view.minPrice !== undefined) params.set("minPrice", String(view.minPrice));
       if (view.maxPrice !== undefined) params.set("maxPrice", String(view.maxPrice));
+      if (view.page && view.page > 1) params.set("pages", String(view.page));
       const qs = params.toString();
       return `/products${qs ? `?${qs}` : ""}`;
     }
@@ -174,6 +176,7 @@ export function viewToUrl(view: AppView): string {
       return view.id ? `/profile?id=${encodeURIComponent(view.id)}` : "/profile";
     case "auth": {
       const base = "/auth";
+      if (view.authMode === 'forgot-password') return "/forgot-password";
       if (view.authMode) {
         return `${base}/${view.authMode}${view.prefilledEmail ? `?email=${encodeURIComponent(view.prefilledEmail)}` : ""}`;
       }
@@ -183,6 +186,8 @@ export function viewToUrl(view: AppView): string {
     }
     case "admin":
       return view.role?.toLowerCase() === "manager" ? "/manager" : "/admin";
+    case "info":
+      return `/info/${encodeURIComponent(view.slug)}`;
     default:
       return "/";
   }
@@ -224,6 +229,7 @@ export function urlToView(pathname: string, search: string): AppView {
     
     if (qs.get("minPrice")) view.minPrice = parseFloat(qs.get("minPrice")!);
     if (qs.get("maxPrice")) view.maxPrice = parseFloat(qs.get("maxPrice")!);
+    if (qs.get("pages")) view.page = parseInt(qs.get("pages")!);
     return view;
   }
 
@@ -234,6 +240,7 @@ export function urlToView(pathname: string, search: string): AppView {
   }
 
   // Product detail: /product/[slug] or /product/[id]
+  // Product detail: /product/[slug] or /product/[id]
   if (pathname.startsWith("/product/")) {
     const segment = decodeURIComponent(pathname.slice("/product/".length));
     // If it looks like a UUID (format: 8-4-4-4-12 hex chars), treat as ID
@@ -242,6 +249,11 @@ export function urlToView(pathname: string, search: string): AppView {
       return { type: "product-detail", productId: segment };
     }
     return { type: "product-detail", productId: "", productSlug: segment };
+  }
+  
+  // Forgot Password standalone slug
+  if (pathname === "/forgot-password") {
+    return { type: "auth", authMode: "forgot-password" };
   }
 
   // Cart
@@ -293,6 +305,12 @@ export function urlToView(pathname: string, search: string): AppView {
   // Admin / Manager
   if (pathname === "/admin") return { type: "admin", role: "admin" };
   if (pathname === "/manager") return { type: "admin", role: "manager" };
+
+  // Info pages: /info/[slug]
+  if (pathname.startsWith("/info/")) {
+    const slug = decodeURIComponent(pathname.slice("/info/".length));
+    return { type: "info", slug };
+  }
 
   // Fallback to home
   return { type: "home" };

@@ -25,6 +25,7 @@ const AuthPage = dynamic(() => import("@/components/auth/auth-page").then(mod =>
 const AdminPanel = dynamic(() => import("@/components/admin/admin-panel").then(mod => mod.AdminPanel), { ssr: false })
 const ChatWidget = dynamic(() => import("@/components/chat/chat-widget").then(mod => mod.ChatWidget), { ssr: false })
 const OrderTracking = dynamic(() => import("@/components/order/order-tracking").then(mod => mod.OrderTracking), { ssr: false })
+const InfoPage = dynamic(() => import("@/components/layout/info-page").then(mod => mod.InfoPage), { ssr: false })
 
 import { HeroBanner } from "@/components/home/hero-banner"
 import { PromoTicker } from "@/components/home/promo-ticker"
@@ -137,6 +138,9 @@ export default function Home() {
       title = "Wishlist | Say Shop"
     } else if (currentView.type === "auth") {
       title = "Sign In | Say Shop"
+    } else if (currentView.type === "info") {
+      const label = currentView.slug.charAt(0).toUpperCase() + currentView.slug.slice(1)
+      title = `${label} | Say Shop`
     }
     
     document.title = title
@@ -177,7 +181,7 @@ export default function Home() {
     return <LoadingScreen />
   }
 
-  const viewKey = `${currentView.type}-${'productId' in currentView ? currentView.productId : ''}${'productSlug' in currentView ? currentView.productSlug : ''}${'orderId' in currentView ? currentView.orderId : ''}${'search' in currentView ? currentView.search : ''}${'categoryId' in currentView ? currentView.categoryId : ''}${'categorySlug' in currentView ? currentView.categorySlug : ''}${'minPrice' in currentView ? currentView.minPrice : ''}${'maxPrice' in currentView ? currentView.maxPrice : ''}`
+  const viewKey = `${currentView.type}-${'productId' in currentView ? currentView.productId : ''}${'productSlug' in currentView ? currentView.productSlug : ''}${'orderId' in currentView ? currentView.orderId : ''}${'search' in currentView ? currentView.search : ''}${'categoryId' in currentView ? currentView.categoryId : ''}${'categorySlug' in currentView ? currentView.categorySlug : ''}${'minPrice' in currentView ? currentView.minPrice : ''}${'maxPrice' in currentView ? currentView.maxPrice : ''}${'page' in currentView ? currentView.page : ''}${'slug' in currentView ? (currentView as any).slug : ''}`
 
   const isFullPageView =
     currentView.type === "cart" || currentView.type === "checkout" || currentView.type === "admin" || currentView.type === "order-confirmation"
@@ -185,7 +189,7 @@ export default function Home() {
   return (
     <>
       <LoadingScreen />
-      <ScrollProgress />
+
       <div className="flex min-h-screen flex-col pb-20 md:pb-0">
       <Header />
       <CartDrawer />
@@ -212,6 +216,7 @@ export default function Home() {
                 sort={"sort" in currentView ? currentView.sort : undefined}
                 minPrice={"minPrice" in currentView ? currentView.minPrice : undefined}
                 maxPrice={"maxPrice" in currentView ? currentView.maxPrice : undefined}
+                page={"page" in currentView ? currentView.page : undefined}
               />
             )}
             {currentView.type === "product-detail" && (
@@ -242,6 +247,7 @@ export default function Home() {
                 authMode={"authMode" in currentView ? currentView.authMode : undefined}
               />
             )}
+            {currentView.type === "info" && <InfoPage slug={currentView.slug} />}
           </main>
           {!isFullPageView && <Footer />}
         </PageTransition>

@@ -27,6 +27,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // ── SECURITY: OTP Attempt Tracking ────────────────────
+    const otpTracker = (global as any).otpTracker || new Map<string, number>()
+    if (!(global as any).otpTracker) (global as any).otpTracker = otpTracker
+
+    const attempts = otpTracker.get(email.toLowerCase()) || 0
+    if (attempts >= 5) {
+      return NextResponse.json(
+        { error: 'Too many failed attempts. For security, please request a new verification code.' },
+        { status: 429 }
+      )
+    }
+
     const supabase = await createSupabaseServerClient()
 
     // ── Find user by email ──────────────────────────────────
@@ -46,11 +58,34 @@ export async function POST(request: NextRequest) {
 
     // ── Verify code matches and hasn't expired ──────────────
     if (!user.verification_code || user.verification_code !== code) {
+      // Record failed attempt
+      const newAttempts = attempts + 1
+      otpTracker.set(email.toLowerCase(), newAttempts)
+      
+      // If too many failures, invalidate the code in the DB for security
+      if (newAttempts >= 5) {
+        await supabase.from('users').update({ 
+          verification_code: null, 
+          verification_code_expires_at: null 
+        }).eq('id', user.id)
+        
+        return NextResponse.json(
+          { error: 'Too many failed attempts. Your verification code has been invalidated for security.' },
+          { status: 429 }
+        )
+      }
+
       return NextResponse.json(
-        { error: 'Invalid or expired verification code' },
+        { 
+          error: 'Invalid verification code', 
+          remainingAttempts: 5 - newAttempts 
+        },
         { status: 400 }
       )
     }
+
+    // Success - clear attempts
+    otpTracker.delete(email.toLowerCase())
 
     const now = new Date()
     if (
@@ -81,10 +116,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Fetch profile for name ──────────────────────────────
+    // ── Fetch profile for name and phone ───────────────────
     const { data: profile } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, phone')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -110,6 +145,7 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       name: profile?.full_name || user.email,
+      phone: profile?.phone || null,
       role: roleName.toUpperCase(),
     }
 

@@ -10,24 +10,24 @@ import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 
 const slides = [
   {
-    headline: "Summer Tech Sale",
-    subtitle: "Up to 40% off on premium electronics",
-    cta: "Shop Now",
-    gradient: "from-blue-900/80 via-blue-800/50 to-transparent",
+    headline: "Future of Sound",
+    subtitle: "Experience the next generation of audio fidelity with our premium collection.",
+    cta: "Shop Audio",
+    gradient: "from-[#0a0a0c] via-indigo-950/40 to-transparent",
     image: "/images/hero/banner1.png"
   },
   {
-    headline: "New Arrivals",
-    subtitle: "Discover the latest gadgets and accessories",
-    cta: "Explore",
-    gradient: "from-blue-600/80 via-purple-600/50 to-transparent",
+    headline: "Precision Time",
+    subtitle: "Masterfully crafted smartwatches for the modern professional.",
+    cta: "Explore Watches",
+    gradient: "from-[#0a0a0c] via-blue-950/40 to-transparent",
     image: "/images/hero/banner2.png"
   },
   {
-    headline: "Free Shipping",
-    subtitle: "On all orders over $50, no code needed",
-    cta: "Start Shopping",
-    gradient: "from-green-600/80 via-teal-600/50 to-transparent",
+    headline: "Beyond Mobile",
+    subtitle: "Unleash the power of the latest flagship smartphones.",
+    cta: "View Phones",
+    gradient: "from-[#0a0a0c] via-slate-900/40 to-transparent",
     image: "/images/hero/banner3.png"
   },
 ];

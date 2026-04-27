@@ -46,6 +46,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useRewardsStore } from "@/stores/rewards-store"
+import { CartAddIcon } from "@/components/ui/custom-icons"
 
 export function CartPage() {
   const items = useCartStore((s) => s.items)
@@ -279,7 +280,7 @@ export function CartPage() {
           >
             <div className="relative">
               <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-orange-950/50 dark:to-orange-900/30">
-                <ShoppingBag className="h-16 w-16 text-blue-400/70" />
+                <CartAddIcon className="h-16 w-16 text-blue-600/70" />
               </div>
               <div className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-orange-900/50">
                 <ArrowRight className="h-5 w-5 text-blue-600 rotate-[-45deg]" />

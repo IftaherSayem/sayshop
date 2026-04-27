@@ -30,6 +30,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useRealtimeRefetch } from "@/hooks/use-supabase-realtime"
+import { CartAddIcon } from "@/components/ui/custom-icons"
 
 // ── Status Config ──────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
@@ -378,19 +379,19 @@ export function OrderList() {
         {!loading && !error && orders.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-20 text-center">
             <div className="flex h-28 w-28 items-center justify-center rounded-full bg-muted">
-              <Package className="h-14 w-14 text-muted-foreground/50" />
+              <CartAddIcon className="h-14 w-14 text-muted-foreground/50" />
             </div>
             <h2 className="text-2xl font-semibold">No orders yet</h2>
             <p className="max-w-md text-sm text-muted-foreground">
               You haven&apos;t placed any orders yet. Start shopping and your order history will appear here.
             </p>
-            <Button
-              onClick={handleStartShopping}
-              className="mt-2 bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Start Shopping
-            </Button>
+              <Button
+                onClick={handleStartShopping}
+                className="mt-2 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <CartAddIcon className="mr-2 h-4 w-4" />
+                Start Shopping
+              </Button>
           </div>
         )}
 

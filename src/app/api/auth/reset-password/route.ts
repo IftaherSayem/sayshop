@@ -10,8 +10,19 @@ export async function POST(request: NextRequest) {
   try {
     const { email, code, newPassword } = await request.json()
 
-    if (!email || !code || !newPassword || newPassword.length < 6) {
-      return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
+    if (!email || !code || !newPassword) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // ── SECURITY: Strong Password Policy ────────────────────
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+    if (typeof newPassword !== 'string' || !passwordRegex.test(newPassword)) {
+      return NextResponse.json(
+        {
+          error: 'Password must be at least 8 characters long and include uppercase, lowercase, numbers, and a special character.'
+        },
+        { status: 400 }
+      )
     }
 
     const supabase = await createSupabaseServerClient()

@@ -6,42 +6,47 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import { toast } from "sonner"
+import { useUIStore } from "@/stores/ui-store"
+import type { AppView } from "@/lib/types"
 
 const footerSections = [
   {
     title: "Get to Know Us",
     links: [
-      { label: "About", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Press", href: "#" },
-      { label: "Blog", href: "#" },
+      { label: "About", view: { type: "info", slug: "about" } as AppView },
+      { label: "Careers", view: { type: "info", slug: "careers" } as AppView },
+      { label: "Press", view: { type: "info", slug: "press" } as AppView },
+      { label: "Blog", view: { type: "info", slug: "blog" } as AppView },
     ],
   },
   {
-    title: "Make Money with Us",
+    title: "Account & Orders",
     links: [
-      { label: "Sell Products", href: "#" },
-      { label: "Become an Affiliate", href: "#" },
-      { label: "Advertise", href: "#" },
+      { label: "My Account", view: { type: "profile" } as AppView },
+      { label: "My Orders", view: { type: "orders" } as AppView },
+      { label: "Wishlist", view: { type: "wishlist" } as AppView },
+      { label: "Shop All", view: { type: "products" } as AppView },
     ],
   },
   {
-    title: "Payment Methods",
+    title: "Quick Links",
     links: [
-      { label: "Bkash", href: "#" },
-      { label: "Nagad", href: "#" },
-      { label: "Rocket", href: "#" },
-      { label: "Google Pay", href: "#" },
+      { label: "Cart", view: { type: "cart" } as AppView },
+      { label: "Checkout", view: { type: "checkout" } as AppView },
+      { label: "Compare", view: { type: "compare" } as AppView },
+      { label: "Auth", view: { type: "auth" } as AppView },
     ],
   },
   {
     title: "Let Us Help You",
     links: [
-      { label: "Help Center", href: "#" },
-      { label: "Returns", href: "#" },
-      { label: "Shipping Info", href: "#" },
-      { label: "Contact Us", href: "#" },
-      { label: "Track Your Order", href: "#", isTrackOrder: true },
+      { label: "Help Center", view: { type: "info", slug: "help" } as AppView },
+      { label: "Returns", view: { type: "orders" } as AppView },
+      { label: "Shipping Info", view: { type: "info", slug: "shipping" } as AppView },
+      { label: "Terms & Conditions", view: { type: "info", slug: "terms-and-conditions" } as AppView },
+      { label: "Contact Us", view: { type: "info", slug: "contact" } as AppView },
+      { label: "Track Your Order", isTrackOrder: true },
     ],
   },
 ]
@@ -162,11 +167,14 @@ export function Footer() {
     }
   }
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, isTrackOrder?: boolean) => {
+  const setView = useUIStore((s) => s.setView)
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, link: any) => {
     e.preventDefault()
-    if (isTrackOrder) {
-      // Dispatch custom event to open the OrderTracking sheet
+    if (link.isTrackOrder) {
       window.dispatchEvent(new CustomEvent("open-order-tracking"))
+    } else if (link.view) {
+      setView(link.view)
     }
   }
 
@@ -188,11 +196,13 @@ export function Footer() {
         {/* Logo + tagline row */}
         <div className="mb-8 flex flex-col items-center gap-2 sm:flex-row">
           <div className="flex flex-col items-center gap-1 sm:items-start">
-            <div className="flex items-center gap-2.5">
-              <Image src="/images/logo-premium.png" alt="SayShop" width={32} height={32} className="h-8 w-8 rounded-lg object-contain" />
-              <span className="text-xl font-bold text-white tracking-widest">SAYSHOP</span>
+            <div className="flex items-center gap-3">
+              <Image src="/images/logo-premium.png" alt="SayShop" width={40} height={40} className="h-10 w-auto object-contain" />
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-xl font-black text-white tracking-tighter uppercase italic">SAY<span className="text-blue-500 font-light not-italic">SHOP</span></span>
+                <span className="text-[8px] uppercase tracking-[0.4em] text-zinc-500 font-bold mt-0.5">Elite Retail</span>
+              </div>
             </div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-medium">Premier E-Commerce Experience</p>
           </div>
         </div>
 
@@ -290,9 +300,9 @@ export function Footer() {
                 {section.links.map((link) => (
                   <li key={link.label}>
                     <a
-                      href={link.href}
+                      href="#"
                       onClick={(e) =>
-                        handleLinkClick(e, "isTrackOrder" in link && link.isTrackOrder)
+                        handleLinkClick(e, link)
                       }
                       className={`group relative inline-block text-sm text-neutral-400 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded ${"isTrackOrder" in link && link.isTrackOrder
                         ? "font-medium text-neutral-300 hover:text-blue-600"
@@ -414,14 +424,20 @@ export function Footer() {
           <div className="flex items-center gap-4">
             <a
               href="#"
-              onClick={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault()
+                setView({ type: "info", slug: "shipping" })
+              }}
               className="relative text-xs text-neutral-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             >
               Privacy Policy
             </a>
             <a
               href="#"
-              onClick={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault()
+                setView({ type: "info", slug: "terms-and-conditions" })
+              }}
               className="relative text-xs text-neutral-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded"
             >
               Terms of Service

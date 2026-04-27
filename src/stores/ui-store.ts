@@ -169,7 +169,13 @@ function updateTitle(view: AppView) {
       document.title = "My Profile - " + baseTitle;
       break;
     case "auth":
-      document.title = "Sign In - " + baseTitle;
+      if (view.authMode === 'forgot-password') {
+        document.title = "Forgot Password - " + baseTitle;
+      } else if (view.authMode === 'reset-password') {
+        document.title = "Reset Password - " + baseTitle;
+      } else {
+        document.title = "Sign In - " + baseTitle;
+      }
       break;
     case "admin":
       document.title = "Admin Panel - " + baseTitle;

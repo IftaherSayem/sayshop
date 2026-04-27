@@ -12,6 +12,7 @@ interface DbProductRow {
   discount_price: number | null
   category_id: string | null
   sku: string | null
+  brand: string | null
   tags: string[] | null
   is_active: boolean
   images: string[] | null
@@ -61,11 +62,24 @@ function sanitizeSearchTerm(term: string): string {
   return term.replace(/[&|!()*:<>"'+\\]/g, ' ').trim()
 }
 
+import { getProductsCache, setProductsCache } from '@/lib/products-cache'
+
 // ── GET /api/products ───────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const cacheKey = searchParams.toString() || 'default'
+    
+    // ── Check Cache First ──
+    const cachedData = getProductsCache(cacheKey)
+    if (cachedData) {
+      const res = NextResponse.json(cachedData)
+      res.headers.set('X-Cache', 'HIT')
+      res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400')
+      return res
+    }
+
     const supabase = await createSupabaseServerClient()
 
     // ── Fetch specific products by ID: ?ids=id1,id2,id3 ──
@@ -92,12 +106,14 @@ export async function GET(request: NextRequest) {
       const products = (data || []) as unknown as DbProductRow[]
       const transformed = products.map(transformProduct)
 
-      const res = NextResponse.json({
+      const responseData = {
         products: transformed,
         total: transformed.length,
         page: 1,
         totalPages: 1,
-      })
+      }
+      setProductsCache(cacheKey, responseData)
+      const res = NextResponse.json(responseData)
       res.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
       return res
     }
@@ -115,9 +131,10 @@ export async function GET(request: NextRequest) {
       : null
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '12')))
+    const featured = searchParams.get('featured') === 'true'
 
     // ── Optimized High-Performance Selection (Rule: Minimal Payload) ──
-    const LEAN_COLUMNS = 'id, name, slug, base_price, discount_price, category_id, is_active, images, created_at, featured, categories(id, name, slug), inventory(stock)'
+    const LEAN_COLUMNS = 'id, name, slug, base_price, discount_price, category_id, brand, is_active, images, created_at, featured, categories(id, name, slug), inventory(stock)'
 
     // Build base query
     let query = supabase
@@ -125,6 +142,11 @@ export async function GET(request: NextRequest) {
       .select(LEAN_COLUMNS, { count: 'exact' })
       .eq('is_active', true)
       .is('deleted_at', null)
+
+    // Featured filter
+    if (featured) {
+      query = query.eq('featured', true)
+    }
 
     // Search: try full-text search first, fallback to ILIKE
     if (search) {
@@ -155,6 +177,24 @@ export async function GET(request: NextRequest) {
       query = query.filter('categories.slug', 'eq', categorySlug)
     }
 
+    // Brand filter
+    const brandsParam = searchParams.get('brands')
+    if (brandsParam) {
+      const brands = brandsParam.split(',').filter(Boolean)
+      if (brands.length > 0) {
+        query = query.in('brand', brands)
+      }
+    }
+
+    // Rating filter
+    const minRating = searchParams.get('minRating')
+    if (minRating) {
+      const rating = parseFloat(minRating)
+      if (!isNaN(rating)) {
+        query = query.gte('rating', rating)
+      }
+    }
+
     // Price filter on base_price
     if (minPrice !== null) {
       query = query.gte('base_price', minPrice)
@@ -163,20 +203,20 @@ export async function GET(request: NextRequest) {
       query = query.lte('base_price', maxPrice)
     }
 
-    // Sort
+    // Sort with stable secondary key (id) to prevent pagination jumping
     switch (sort) {
       case 'price_asc':
-        query = query.order('base_price', { ascending: true })
+        query = query.order('base_price', { ascending: true }).order('id', { ascending: true })
         break
       case 'price_desc':
-        query = query.order('base_price', { ascending: false })
+        query = query.order('base_price', { ascending: false }).order('id', { ascending: true })
         break
       case 'popular':
-        query = query.order('created_at', { ascending: false })
+        query = query.order('created_at', { ascending: false }).order('id', { ascending: true })
         break
       case 'newest':
       default:
-        query = query.order('created_at', { ascending: false })
+        query = query.order('created_at', { ascending: false }).order('id', { ascending: true })
         break
     }
 
@@ -197,12 +237,14 @@ export async function GET(request: NextRequest) {
     const total = count || 0
     const totalPages = Math.ceil(total / limit)
 
-    const res = NextResponse.json({
+    const responseData = {
       products: transformed,
       total,
       page,
       totalPages,
-    })
+    }
+    setProductsCache(cacheKey, responseData)
+    const res = NextResponse.json(responseData)
 
     // Browser/Edge caching: 5 minutes max-age, 24 hours stale-while-revalidate
     res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400')
@@ -223,6 +265,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { getCurrentUser } = await import('@/lib/supabase/server')
+    const user = await getCurrentUser()
+
+    // ── SECURITY: Role-Based Access Control (RBAC) ──
+    // Only allow ADMIN or MANAGER roles to create products
+    if (!user || (user.role?.toUpperCase() !== 'ADMIN' && user.role?.toUpperCase() !== 'MANAGER')) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to perform this action' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const supabase = await createSupabaseServerClient()
 
