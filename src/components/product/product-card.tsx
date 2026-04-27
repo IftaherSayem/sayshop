@@ -283,7 +283,7 @@ export const ProductCard = memo(function ProductCard({ product, onQuickView }: P
       </div>
       <CardContent className="p-3 pb-2.5 flex-1 flex flex-col min-h-[140px]">
         {/* Brand - always reserve space */}
-        <p className="text-xs text-muted-foreground mb-1 min-h-[1rem]">
+        <p className="text-xs text-muted-foreground mb-1 min-h-[1rem] truncate">
           {product.brand || '\u00A0'}
         </p>
         <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-blue-700 transition-colors">

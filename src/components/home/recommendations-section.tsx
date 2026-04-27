@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ThumbsUp, RefreshCw } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { ProductCard } from "@/components/product/product-card";
 import type { Product } from "@/lib/types";
@@ -136,7 +136,7 @@ export function RecommendationsSection() {
           <div>
             <div className="h-0.5 max-w-24 mb-4 rounded-full bg-gradient-to-r from-blue-400 to-blue-700" />
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+              <ThumbsUp className="h-5 w-5 text-blue-600" />
               <h2 className="text-2xl md:text-3xl font-bold">Recommended for You</h2>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -193,7 +193,7 @@ export function RecommendationsSection() {
             </div>
           ) : recommended.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <ThumbsUp className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p>No recommendations available yet</p>
             </div>
           ) : (
@@ -234,7 +234,7 @@ export function RecommendationsSection() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="min-w-[calc(25%-0.75rem)] lg:min-w-[calc(20%-0.8rem)] snap-start flex-shrink-0"
+                      className="w-[200px] sm:w-[220px] md:w-[240px] snap-start flex-shrink-0"
                     >
                       <ProductCard product={product} />
                     </motion.div>
